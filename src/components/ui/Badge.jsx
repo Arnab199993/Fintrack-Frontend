@@ -8,10 +8,12 @@ const VARIANTS = {
   orange: 'bg-neon-orange/10 text-neon-orange border border-neon-orange/20',
 }
 
-export default function Badge({ children, variant = 'gray', className = '' }) {
+const Badge = ({ children, variant = 'gray', className = '' }) => {
   return (
-    <span className={`badge ${VARIANTS[variant] ?? VARIANTS.gray} ${className}`}>
-      {children}
-    </span>
+     <span className={`badge ${VARIANTS[variant] ?? VARIANTS.gray} ${className}`}>
+       {children}
+     </span>
   )
 }
+
+export default Badge

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 
-export default function Modal({ open, onClose, title, children, maxWidth = 'max-w-md' }) {
+export const Modal = ({ open, onClose, title, children, maxWidth = 'max-w-md' }) =>{
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
     if (open) document.addEventListener('keydown', handler)
@@ -30,3 +30,4 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
     </div>
   )
 }
+export default Modal;

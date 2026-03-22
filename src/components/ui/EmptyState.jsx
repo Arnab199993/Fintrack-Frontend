@@ -1,4 +1,4 @@
-export default function EmptyState({ icon = '📭', title, sub, action }) {
+const EmptyState =({ icon = '📭', title, sub, action }) =>{
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="text-4xl mb-3 opacity-40">{icon}</div>
@@ -8,3 +8,4 @@ export default function EmptyState({ icon = '📭', title, sub, action }) {
     </div>
   )
 }
+export default EmptyState

@@ -1,4 +1,4 @@
-export function FormGroup({ label, children, hint }) {
+export const FormGroup = ({ label, children, hint }) =>{
   return (
     <div>
       {label && <label className="field-label">{label}</label>}
@@ -8,11 +8,15 @@ export function FormGroup({ label, children, hint }) {
   )
 }
 
-export function Input({ className = '', ...props }) {
+
+
+export const Input = ({ className = '', ...props }) => {
   return <input className={`field ${className}`} {...props} />
 }
 
-export function Select({ className = '', children, ...props }) {
+
+
+export const  Select = ({ className = '', children, ...props }) => {
   return (
     <select className={`field ${className}`} {...props}>
       {children}
@@ -20,6 +24,6 @@ export function Select({ className = '', children, ...props }) {
   )
 }
 
-export function Textarea({ className = '', ...props }) {
+export const Textarea = ({ className = '', ...props }) => {
   return <textarea className={`field resize-none ${className}`} rows={3} {...props} />
 }
