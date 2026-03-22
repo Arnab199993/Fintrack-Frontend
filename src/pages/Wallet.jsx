@@ -1,0 +1,226 @@
+import { useState } from 'react'
+import { ArrowDownLeft, ArrowUpRight, Wallet as WalletIcon, Plus, RefreshCw } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader.jsx'
+import Badge from '../components/ui/Badge.jsx'
+import Modal from '../components/ui/Modal.jsx'
+import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
+import { useApp } from '../context/AppContext.jsx'
+import { MOCK_TRANSACTIONS } from '../utils/constants.js'
+import { fmt, fmtCompact, fmtDate } from '../utils/helpers.js'
+
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD']
+
+export default function Wallet() {
+  const { user, setUser, showToast } = useApp()
+  const [topUpOpen, setTopUpOpen]   = useState(false)
+  const [topUpAmount, setTopUpAmount] = useState('')
+  const [currency, setCurrency]     = useState(user.currency)
+
+  const credits  = MOCK_TRANSACTIONS.filter(t => t.type === 'credit')
+  const debits   = MOCK_TRANSACTIONS.filter(t => t.type === 'debit')
+  const totalIn  = credits.reduce((s, t) => s + t.amount, 0)
+  const totalOut = debits.reduce((s, t) => s + t.amount, 0)
+
+  const handleTopUp = (e) => {
+    e.preventDefault()
+    const amount = parseFloat(topUpAmount)
+    if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
+    setUser(u => ({ ...u, walletBalance: u.walletBalance + amount }))
+    showToast(`${fmt(amount)} added to your wallet`, 'success')
+    setTopUpOpen(false)
+    setTopUpAmount('')
+  }
+
+  const handleCurrencyChange = (e) => {
+    setCurrency(e.target.value)
+    setUser(u => ({ ...u, currency: e.target.value }))
+    showToast(`Currency updated to ${e.target.value}`, 'success')
+  }
+
+  const quickAmounts = [500, 1000, 5000, 10000]
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Wallet"
+        subtitle="Your virtual finance account"
+        action={
+          <button onClick={() => setTopUpOpen(true)} className="btn-primary">
+            <Plus size={14} /> Top Up
+          </button>
+        }
+      />
+
+      {/* Main wallet card */}
+      <div className="relative overflow-hidden rounded-2xl border border-neon-blue/20 bg-gradient-to-br from-[#0d1b2e] via-obsidian-800 to-obsidian-900 p-8 animate-slide-up fill-both">
+        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-neon-blue/8 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-neon-green/5 blur-2xl pointer-events-none" />
+
+        {/* Card decoration */}
+        <div className="absolute top-4 right-6 opacity-10">
+          <WalletIcon size={80} className="text-neon-blue" />
+        </div>
+
+        <div className="relative">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="section-label text-neon-blue/60 mb-2">Available Balance</p>
+              <p className="font-display font-bold text-5xl tracking-tight text-white">
+                {fmtCompact(user.walletBalance, currency)}
+              </p>
+              <p className="text-sm text-ink-500 mt-2">{user.firstName} {user.lastName}</p>
+            </div>
+            <div>
+              <Select value={currency} onChange={handleCurrencyChange} className="w-24 text-center bg-white/5 border-white/10 text-ink-700 text-sm">
+                {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </Select>
+            </div>
+          </div>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <ArrowDownLeft size={13} className="text-neon-green" />
+                <span className="text-xs text-ink-500">Money In</span>
+              </div>
+              <p className="font-display font-bold text-xl text-neon-green">{fmtCompact(totalIn)}</p>
+              <p className="text-xs text-ink-500 mt-0.5">{credits.length} credit transactions</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <ArrowUpRight size={13} className="text-neon-red" />
+                <span className="text-xs text-ink-500">Money Out</span>
+              </div>
+              <p className="font-display font-bold text-xl text-neon-red">{fmtCompact(totalOut)}</p>
+              <p className="text-xs text-ink-500 mt-0.5">{debits.length} debit transactions</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="flex items-start gap-3 rounded-xl border border-neon-yellow/20 bg-neon-yellow/5 px-4 py-3">
+        <span className="text-neon-yellow text-lg">⚠️</span>
+        <p className="text-xs text-ink-500 leading-relaxed">
+          <span className="font-semibold text-neon-yellow">Simulated wallet — </span>
+          No real money transactions happen. This is a demo environment for tracking purposes only.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Balance history */}
+        <div className="card overflow-hidden animate-slide-up fill-both delay-100">
+          <div className="px-5 py-4 border-b border-obsidian-700">
+            <h2 className="font-display font-semibold text-sm text-ink-900">Balance History</h2>
+          </div>
+          <div className="divide-y divide-obsidian-700 max-h-80 overflow-y-auto">
+            {MOCK_TRANSACTIONS.slice(0, 8).map((t, i) => (
+              <div key={t._id} className="flex items-center gap-3 px-5 py-3 animate-slide-up fill-both" style={{ animationDelay: `${100 + i * 40}ms` }}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === 'credit' ? 'bg-neon-green/10' : 'bg-neon-red/10'}`}>
+                  {t.type === 'credit'
+                    ? <ArrowDownLeft size={13} className="text-neon-green" />
+                    : <ArrowUpRight size={13} className="text-neon-red" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-ink-900 truncate">{t.description}</p>
+                  <p className="text-[11px] text-ink-500">{fmtDate(t.date)}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-mono text-sm font-semibold ${t.type === 'credit' ? 'text-neon-green' : 'text-neon-red'}`}>
+                    {t.type === 'credit' ? '+' : '-'}{fmt(t.amount)}
+                  </p>
+                  {t.balanceAfter != null && (
+                    <p className="text-[11px] text-ink-500 font-mono">{fmt(t.balanceAfter)}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick stats breakdown */}
+        <div className="flex flex-col gap-4">
+          <div className="card p-5 animate-slide-up fill-both delay-200">
+            <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">Account Summary</h2>
+            <div className="space-y-3">
+              {[
+                { label: 'Starting Balance', value: fmt(0),                              color: 'text-ink-700' },
+                { label: 'Total Credits',    value: `+${fmt(totalIn)}`,                  color: 'text-neon-green' },
+                { label: 'Total Debits',     value: `-${fmt(totalOut)}`,                 color: 'text-neon-red' },
+                { label: 'Net Change',       value: fmt(totalIn - totalOut),             color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },
+                { label: 'Current Balance',  value: fmt(user.walletBalance),             color: 'text-neon-blue' },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between py-2 border-b border-obsidian-700 last:border-0">
+                  <span className="text-sm text-ink-500">{row.label}</span>
+                  <span className={`font-mono font-semibold text-sm ${row.color}`}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Top Up Modal */}
+      <Modal open={topUpOpen} onClose={() => setTopUpOpen(false)} title="Top Up Wallet">
+        <form onSubmit={handleTopUp} className="space-y-4">
+          <div className="rounded-xl border border-neon-blue/20 bg-neon-blue/5 p-4 text-center">
+            <p className="section-label mb-1">Current Balance</p>
+            <p className="font-display font-bold text-3xl text-neon-blue">{fmt(user.walletBalance)}</p>
+          </div>
+
+          <FormGroup label="Amount to Add">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">$</span>
+              <Input
+                type="number" step="0.01" min="0.01" max="1000000"
+                className="pl-7" placeholder="0.00"
+                value={topUpAmount}
+                onChange={e => setTopUpAmount(e.target.value)}
+                required
+              />
+            </div>
+          </FormGroup>
+
+          {/* Quick amounts */}
+          <div>
+            <p className="field-label mb-2">Quick Select</p>
+            <div className="grid grid-cols-4 gap-2">
+              {quickAmounts.map(a => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setTopUpAmount(String(a))}
+                  className={`py-2 rounded-xl text-xs font-semibold border transition-all ${
+                    topUpAmount === String(a)
+                      ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
+                      : 'bg-obsidian-700 border-obsidian-600 text-ink-500 hover:text-ink-700'
+                  }`}
+                >
+                  ${a >= 1000 ? `${a/1000}K` : a}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {topUpAmount && !isNaN(topUpAmount) && parseFloat(topUpAmount) > 0 && (
+            <div className="rounded-xl border border-neon-green/20 bg-neon-green/5 p-3 text-center">
+              <p className="text-xs text-ink-500 mb-0.5">New balance after top up</p>
+              <p className="font-display font-bold text-xl text-neon-green">
+                {fmt(user.walletBalance + parseFloat(topUpAmount))}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button type="submit" className="btn-primary flex-1">Confirm Top Up</button>
+            <button type="button" className="btn-secondary" onClick={() => setTopUpOpen(false)}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}
