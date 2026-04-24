@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
 import { TrendingUp, ArrowRight, Eye, EyeOff, Shield, BarChart3, Zap } from 'lucide-react'
 import { FormGroup, Input } from '../components/ui/Form.jsx'
-import { useApp } from '../context/AppContext.jsx'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
 
 const FEATURES = [
   { icon: BarChart3, text: 'Category-wise spending charts'     },
@@ -102,7 +103,7 @@ function OtpInput({ onComplete, loading }) {
 }
 
 export default function Auth() {
-  const { navigate, showToast } = useApp()
+  const { navigate, showToast, setUser, setUserToken } = useApp()
   const [view, setView]       = useState('login')      // login | register | otp
   const [otpEmail, setOtpEmail] = useState('')
   const [otpPurpose, setOtpPurpose] = useState('login')
@@ -112,43 +113,85 @@ export default function Auth() {
   const [loginForm, setLoginForm]   = useState({ email: '', password: '' })
   const [regForm, setRegForm]       = useState({ firstName: '', lastName: '', email: '', password: '', phone: '' })
 
-  const simulateRequest = (fn) => {
-    setLoading(true)
-    setTimeout(() => { setLoading(false); fn() }, 1000)
-  }
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    simulateRequest(() => {
+    setLoading(true)
+
+    try {
+      await api.auth.login({ email: loginForm.email, password: loginForm.password })
       setOtpEmail(loginForm.email)
       setOtpPurpose('login')
       setView('otp')
       showToast('OTP sent to ' + loginForm.email, 'info')
-    })
+    } catch (error) {
+      showToast(error.message || 'Login failed', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
-    simulateRequest(() => {
+    setLoading(true)
+
+    try {
+      await api.auth.register(regForm)
       setOtpEmail(regForm.email)
       setOtpPurpose('verify')
       setView('otp')
-      showToast('Account created! Check your email.', 'success')
-    })
+      showToast('Check your email for verification code', 'success')
+    } catch (error) {
+      showToast(error.message || 'Registration failed', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleOtp = (code) => {
+  const handleOtp = async (code) => {
     if (code.length < 6) return
     setLoading(true)
-    setTimeout(() => {
+
+    try {
+      if (otpPurpose === 'login') {
+        const result = await api.auth.verifyLogin({ email: otpEmail, otp: code })
+        const user = result.data?.user 
+        const token = result.data?.accessToken
+        if (user && token) {
+          setUser(user)
+          setUserToken(token)
+          window.localStorage?.setItem('fintrackLoggedIn', 'true')
+          showToast('Welcome back!', 'success')
+          navigate('dashboard')
+        } else if (user) {
+          setUser(user)
+          window.localStorage?.setItem('fintrackLoggedIn', 'true')
+          showToast('Welcome back!', 'success')
+          navigate('dashboard')
+        }
+      } else {
+        await api.auth.verifyEmail({ email: otpEmail, otp: code })
+        showToast('Email verified successfully. Please sign in.', 'success')
+        setView('login')
+      }
+    } catch (error) {
+      showToast(error.message || 'OTP verification failed', 'error')
+    } finally {
       setLoading(false)
-      showToast('Welcome to FinTrack!', 'success')
-      navigate('dashboard')
-    }, 900)
+    }
   }
 
-  const handleResend = () => {
-    showToast('New code sent to ' + otpEmail, 'info')
+  const handleResend = async () => {
+    if (!otpEmail) return
+    setLoading(true)
+
+    try {
+      await api.auth.resendOtp({ email: otpEmail })
+      showToast('OTP resent to ' + otpEmail, 'info')
+    } catch (error) {
+      showToast(error.message || 'Unable to resend OTP', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

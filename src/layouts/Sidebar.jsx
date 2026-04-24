@@ -2,7 +2,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Target, Sparkles,
   Bell, Wallet, User, LogOut, TrendingUp
 } from 'lucide-react'
-import { useApp } from '../context/AppContext.jsx'
+import { useApp } from '../hooks/useApp.js'
 
 const NAV = [
   { id: 'dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
@@ -15,7 +15,7 @@ const NAV = [
 ]
 
 export default function Sidebar({ unreadAlerts = 0 }) {
-  const { page, navigate, user } = useApp()
+  const { page, navigate, user, logout } = useApp()
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`
 
   return (
@@ -68,7 +68,7 @@ export default function Sidebar({ unreadAlerts = 0 }) {
           </div>
         </button>
         <button
-          onClick={() => navigate('login')}
+          onClick={logout}
           className="nav-item mt-1 text-neon-red/70 hover:text-neon-red hover:bg-neon-red/10"
         >
           <LogOut size={15} />

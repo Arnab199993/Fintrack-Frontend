@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell, BellOff, CheckCheck, Settings, AlertTriangle, TrendingUp, Wallet, Trophy, BarChart3, Zap } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import { FormGroup, Input } from '../components/ui/Form.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
-import { useApp } from '../context/AppContext.jsx'
-import { MOCK_ALERTS } from '../utils/constants.js'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
 import { fmtRelative } from '../utils/helpers.js'
 
 const TYPE_CONFIG = {
@@ -27,10 +27,30 @@ const DEFAULT_SETTINGS = {
 
 export default function Alerts() {
   const { showToast } = useApp()
-  const [alerts, setAlerts]           = useState(MOCK_ALERTS)
+  const [alerts, setAlerts]           = useState([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settings, setSettings]       = useState(DEFAULT_SETTINGS)
   const [filter, setFilter]           = useState('all')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadAlerts = async () => {
+      try {
+        const [alertsResult, settingsResult] = await Promise.all([
+          api.alerts.list(),
+          api.alerts.getSettings(),
+        ])
+        setAlerts(alertsResult.data?.alerts ?? alertsResult.data ?? [])
+        setSettings(settingsResult.data?.settings ?? settingsResult.data ?? DEFAULT_SETTINGS)
+      } catch (error) {
+        showToast(error.message || 'Unable to load alerts', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAlerts()
+  }, [])
 
   const unreadCount = alerts.filter(a => !a.isRead).length
 
@@ -40,19 +60,34 @@ export default function Alerts() {
     return true
   })
 
-  const markRead = (id) => {
-    setAlerts(prev => prev.map(a => a._id === id ? { ...a, isRead: true, readAt: new Date().toISOString() } : a))
+  const markRead = async (id) => {
+    try {
+      await api.alerts.markRead(id)
+      setAlerts(prev => prev.map(a => a._id === id ? { ...a, isRead: true, readAt: new Date().toISOString() } : a))
+    } catch (error) {
+      showToast(error.message || 'Unable to mark alert read', 'error')
+    }
   }
 
-  const markAllRead = () => {
-    setAlerts(prev => prev.map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })))
-    showToast('All alerts marked as read', 'success')
+  const markAllRead = async () => {
+    try {
+      await api.alerts.markAllRead()
+      setAlerts(prev => prev.map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })))
+      showToast('All alerts marked as read', 'success')
+    } catch (error) {
+      showToast(error.message || 'Unable to mark all alerts read', 'error')
+    }
   }
 
-  const handleSettingsSave = (e) => {
+  const handleSettingsSave = async (e) => {
     e.preventDefault()
-    setSettingsOpen(false)
-    showToast('Alert settings saved', 'success')
+    try {
+      await api.alerts.updateSettings(settings)
+      setSettingsOpen(false)
+      showToast('Alert settings saved', 'success')
+    } catch (error) {
+      showToast(error.message || 'Unable to save settings', 'error')
+    }
   }
 
   return (

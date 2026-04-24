@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Edit3, Trash2, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
-import { useApp } from '../context/AppContext.jsx'
-import { MOCK_BUDGETS, CATEGORIES } from '../utils/constants.js'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
+import { CATEGORIES } from '../utils/constants.js'
 import { fmt, catEmoji, catColor } from '../utils/helpers.js'
 
 const STATUS_CONFIG = {
@@ -19,11 +20,26 @@ const EMPTY_FORM = { category: 'food', limitAmount: '', period: 'monthly', alert
 
 export default function Budgets() {
   const { showToast } = useApp()
-  const [budgets, setBudgets] = useState(MOCK_BUDGETS)
+  const [budgets, setBudgets] = useState([])
   const [filterPeriod, setFilterPeriod] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadBudgets = async () => {
+      try {
+        const result = await api.budgets.list()
+        setBudgets(result.data?.budgets ?? result.data ?? [])
+      } catch (error) {
+        showToast(error.message || 'Unable to load budgets', 'error')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBudgets()
+  }, [])
 
   const visible = filterPeriod ? budgets.filter(b => b.period === filterPeriod) : budgets
 
@@ -34,34 +50,47 @@ export default function Budgets() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Delete this budget?')) return
-    setBudgets(prev => prev.filter(b => b._id !== id))
-    showToast('Budget deleted', 'success')
+    try {
+      await api.budgets.remove(id)
+      setBudgets(prev => prev.filter(b => b._id !== id))
+      showToast('Budget deleted', 'success')
+    } catch (error) {
+      showToast(error.message || 'Unable to delete budget', 'error')
+    }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.limitAmount) return showToast('Enter a limit amount', 'error')
-    if (editTarget) {
-      setBudgets(prev => prev.map(b => b._id === editTarget._id ? { ...b, limitAmount: parseFloat(form.limitAmount), alertThreshold: parseInt(form.alertThreshold) } : b))
-      showToast('Budget updated', 'success')
-    } else {
-      const b = {
-        _id: Date.now().toString(),
-        ...form,
-        limitAmount: parseFloat(form.limitAmount),
-        alertThreshold: parseInt(form.alertThreshold),
-        spentAmount: 0,
-        percentUsed: 0,
-        remaining: parseFloat(form.limitAmount),
-        status: 'healthy',
-        isActive: true,
+
+    try {
+      if (editTarget) {
+        const result = await api.budgets.update(editTarget._id, {
+          limitAmount: parseFloat(form.limitAmount),
+          alertThreshold: parseInt(form.alertThreshold),
+        })
+        const updated = result.data?.budget ?? result.budget
+        setBudgets(prev => prev.map(b => b._id === editTarget._id ? { ...b, ...(updated ?? {}), limitAmount: parseFloat(form.limitAmount), alertThreshold: parseInt(form.alertThreshold) } : b))
+        showToast('Budget updated', 'success')
+      } else {
+        const result = await api.budgets.create({
+          category: form.category,
+          limitAmount: parseFloat(form.limitAmount),
+          period: form.period,
+          alertThreshold: parseInt(form.alertThreshold),
+        })
+        const created = result.data?.budget ?? result.budget
+        if (created) {
+          setBudgets(prev => [created, ...prev])
+        }
+        showToast('Budget created', 'success')
       }
-      setBudgets(prev => [...prev, b])
-      showToast('Budget created', 'success')
+      setModalOpen(false)
+    } catch (error) {
+      showToast(error.message || 'Unable to save budget', 'error')
     }
-    setModalOpen(false)
   }
 
   // Totals

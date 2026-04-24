@@ -1,8 +1,22 @@
+import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar.jsx'
-import { MOCK_ALERTS } from '../utils/constants.js'
+import { api } from '../utils/api.js'
 
 export default function AppShell({ children }) {
-  const unread = MOCK_ALERTS.filter(a => !a.isRead).length
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const result = await api.alerts.list({ unreadOnly: true, limit: 1 })
+        setUnread(result.data?.unreadCount ?? result.unreadCount ?? 0)
+      } catch (_error) {
+        setUnread(0)
+      }
+    }
+
+    fetchUnread()
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-obsidian-950 bg-grid-pattern bg-grid">

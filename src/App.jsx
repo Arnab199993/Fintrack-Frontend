@@ -1,3 +1,6 @@
+import { useSelector } from 'react-redux'
+import { useEffect } from 'react'
+import { useDispatch } from 'react-redux'
 import AppShell from './layouts/AppShell.jsx'
 import Toast from './components/ui/Toast.jsx'
 import Auth from './pages/Auth.jsx'
@@ -8,7 +11,9 @@ import Insights from './pages/Insights.jsx'
 import Alerts from './pages/Alerts.jsx'
 import Wallet from './pages/Wallet.jsx'
 import Profile from './pages/Profile.jsx'
-import { useApp } from './context/AppContext.jsx'
+import { setUserProfile, clearUserProfile } from './store/slices/userSlice.js'
+import { setAuthReady } from './store/slices/appSlice.js'
+import { api } from './utils/api.js'
 
 const PAGE_MAP = {
   dashboard:    Dashboard,
@@ -21,21 +26,52 @@ const PAGE_MAP = {
 }
 
 export default function App() {
-  const { page } = useApp()
+  const dispatch = useDispatch()
+  const currentPage = useSelector(state => state.app.currentPage)
+  const isAuthenticated = useSelector(state => state.auth.isAuthenticated)
+  const authReady = useSelector(state => state.app.authReady)
 
-  if (page === 'login') return (
-    <>
-      <Auth />
-      <Toast />
-    </>
-  )
+  // Initialize auth on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (!isAuthenticated) {
+        dispatch(setAuthReady(true))
+        return
+      }
 
-  const Page = PAGE_MAP[page] ?? Dashboard
+      try {
+        const result = await api.users.getProfile()
+        dispatch(setUserProfile(result.data?.user))
+      } catch (error) {
+        console.error('Failed to restore auth:', error)
+        dispatch(clearUserProfile())
+      } finally {
+        dispatch(setAuthReady(true))
+      }
+    }
+
+    initializeAuth()
+  }, [dispatch, isAuthenticated])
+
+  if (!authReady) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Auth />
+        <Toast />
+      </>
+    )
+  }
+
+  const Page = PAGE_MAP[currentPage] ?? Dashboard
 
   return (
     <>
       <AppShell>
-        <div key={page} className="page-enter">
+        <div key={currentPage} className="page-enter">
           <Page />
         </div>
       </AppShell>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Camera, Save, Lock, Bell, Palette, Shield } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
-import { useApp } from '../context/AppContext.jsx'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
 import { fmt } from '../utils/helpers.js'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD', 'JPY']
@@ -20,26 +21,43 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const initials = `${user.firstName[0]}${user.lastName[0]}`
 
-  const handleProfileSave = (e) => {
+  useEffect(() => {
+    setForm({ firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone || '', currency: user.currency })
+  }, [user])
+
+  const handleProfileSave = async (e) => {
     e.preventDefault()
     setSaving(true)
-    setTimeout(() => {
-      setUser(u => ({ ...u, ...form }))
-      setSaving(false)
+
+    try {
+      const result = await api.users.updateProfile(form)
+      const updated = result.data?.user ?? result.user
+      if (updated) {
+        setUser(updated)
+      }
       showToast('Profile updated successfully', 'success')
-    }, 800)
+    } catch (error) {
+      showToast(error.message || 'Unable to update profile', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handlePasswordSave = (e) => {
+  const handlePasswordSave = async (e) => {
     e.preventDefault()
     if (passForm.newPass !== passForm.confirm) return showToast('Passwords do not match', 'error')
     if (passForm.newPass.length < 8) return showToast('Password must be at least 8 characters', 'error')
+
     setSaving(true)
-    setTimeout(() => {
-      setSaving(false)
+    try {
+      await api.users.changePassword({ currentPassword: passForm.current, newPassword: passForm.newPass })
       setPassForm({ current: '', newPass: '', confirm: '' })
       showToast('Password changed successfully', 'success')
-    }, 800)
+    } catch (error) {
+      showToast(error.message || 'Unable to change password', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useApp } from '../../context/AppContext.jsx'
+import { useApp } from '../../hooks/useApp.js'
 import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react'
 
 const CONFIG = {

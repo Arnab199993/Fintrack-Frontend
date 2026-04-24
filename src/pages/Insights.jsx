@@ -1,30 +1,87 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sparkles, TrendingUp, TrendingDown, RefreshCw, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
-import { MOCK_INSIGHTS, MOCK_MONTHLY_TREND, CATEGORY_META } from '../utils/constants.js'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
 import { fmt, fmtCompact, catEmoji, catColor } from '../utils/helpers.js'
-import { useApp } from '../context/AppContext.jsx'
+
+const monthLabel = (year, month) => {
+  const date = new Date(year, month - 1, 1)
+  return date.toLocaleString('default', { month: 'short' })
+}
 
 export default function Insights() {
   const { showToast } = useApp()
   const [generating, setGenerating] = useState(false)
-  const [period, setPeriod] = useState('2024-10')
+  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7))
+  const [insight, setInsight] = useState(null)
+  const [trend, setTrend] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const handleGenerate = () => {
-    setGenerating(true)
-    setTimeout(() => {
-      setGenerating(false)
-      showToast('Insights refreshed for ' + period, 'success')
-    }, 1800)
+  const fetchInsight = async (selectedPeriod) => {
+    setLoading(true)
+    try {
+      const [insightResult, trendResult] = await Promise.all([
+        api.insights.getByPeriod(selectedPeriod),
+        api.transactions.analytics.trend({ months: 6 }),
+      ])
+
+      setInsight(insightResult.data ?? insightResult)
+      setTrend(trendResult.data ?? trendResult ?? [])
+    } catch (error) {
+      if (error?.status === 404) {
+        setInsight(null)
+        showToast(`No insight found for ${selectedPeriod}. Generate insights to create one.`, 'info')
+      } else {
+        showToast(error.message || 'Unable to load insights', 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const catEntries = Object.entries(MOCK_INSIGHTS.categoryBreakdown).sort((a, b) => b[1] - a[1])
-  const catMax = catEntries[0]?.[1] || 1
+  useEffect(() => {
+    fetchInsight(period)
+  }, [period])
 
-  const savingsRate  = MOCK_INSIGHTS.savingsRate
-  const totalIncome  = MOCK_INSIGHTS.totalIncome
-  const totalExpenses= MOCK_INSIGHTS.totalExpenses
+  const handleGenerate = async () => {
+    setGenerating(true)
+    try {
+      const result = await api.insights.generate({ period })
+      setInsight(result.data ?? result)
+      showToast(`Insights refreshed for ${period}`, 'success')
+    } catch (error) {
+      showToast(error.message || 'Unable to generate insights', 'error')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const catEntries = Object.entries(insight?.categoryBreakdown ?? {}).sort((a, b) => b[1] - a[1])
+  const catMax = catEntries[0]?.[1] || 1
+  const savingsRate = insight?.savingsRate ?? 0
+  const totalIncome = insight?.totalIncome ?? 0
+  const totalExpenses = insight?.totalExpenses ?? 0
+
+  const monthlyTrend = trend.reduce((acc, item) => {
+    const label = monthLabel(item.year, item.month)
+    const existing = acc.find(row => row.label === label)
+    if (existing) {
+      if (item.type === 'credit') existing.income = item.total
+      if (item.type === 'debit') existing.expenses = item.total
+    } else {
+      acc.push({
+        label,
+        income: item.type === 'credit' ? item.total : 0,
+        expenses: item.type === 'debit' ? item.total : 0,
+      })
+    }
+    return acc
+  }, []).sort((a, b) => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return monthNames.indexOf(a.label) - monthNames.indexOf(b.label)
+  })
 
   return (
     <div className="space-y-6">
@@ -51,7 +108,6 @@ export default function Insights() {
         }
       />
 
-      {/* Hero insight card */}
       <div className="relative overflow-hidden rounded-2xl border border-neon-purple/20 bg-gradient-to-br from-obsidian-800 to-obsidian-900 p-6 animate-slide-up fill-both">
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-neon-purple/5 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-neon-blue/5 blur-2xl pointer-events-none" />
@@ -64,9 +120,9 @@ export default function Insights() {
           </div>
           <div className="grid grid-cols-3 gap-6 mb-6">
             {[
-              { label: 'Total Income',   value: fmtCompact(totalIncome),   accent: 'text-neon-green', icon: TrendingUp   },
-              { label: 'Total Expenses', value: fmtCompact(totalExpenses), accent: 'text-neon-red',   icon: TrendingDown },
-              { label: 'Savings Rate',   value: `${savingsRate}%`,         accent: savingsRate >= 20 ? 'text-neon-green' : 'text-neon-yellow', icon: null },
+              { label: 'Total Income', value: fmtCompact(totalIncome), accent: 'text-neon-green', icon: TrendingUp },
+              { label: 'Total Expenses', value: fmtCompact(totalExpenses), accent: 'text-neon-red', icon: TrendingDown },
+              { label: 'Savings Rate', value: `${savingsRate}%`, accent: savingsRate >= 20 ? 'text-neon-green' : 'text-neon-yellow', icon: null },
             ].map(s => (
               <div key={s.label}>
                 <p className="section-label mb-1">{s.label}</p>
@@ -85,51 +141,53 @@ export default function Insights() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Insight messages */}
         <div className="card overflow-hidden animate-slide-up fill-both delay-100">
           <div className="px-5 py-4 border-b border-obsidian-700 flex items-center gap-2">
             <Sparkles size={14} className="text-neon-purple" />
             <h2 className="font-display font-semibold text-sm text-ink-900">Smart Observations</h2>
           </div>
           <div className="divide-y divide-obsidian-700">
-            {MOCK_INSIGHTS.insights.map((msg, i) => {
-              const isUp     = msg.startsWith('📈')
-              const isDown   = msg.startsWith('📉')
-              const isWarn   = msg.startsWith('⚠️')
-              const accent   = isDown ? 'border-l-neon-green/40' : isUp || isWarn ? 'border-l-neon-red/40' : 'border-l-neon-blue/30'
-
-              return (
-                <div
-                  key={i}
-                  className={`flex gap-3 px-5 py-4 border-l-2 ${accent} animate-slide-up fill-both`}
-                  style={{ animationDelay: `${150 + i * 60}ms` }}
-                >
-                  <span className="text-lg shrink-0 mt-0.5">{msg.split(' ')[0]}</span>
-                  <p className="text-sm text-ink-700 leading-relaxed">{msg.slice(msg.indexOf(' ') + 1)}</p>
-                </div>
-              )
-            })}
+            {loading ? (
+              <div className="p-6 text-sm text-ink-500">Loading insights…</div>
+            ) : insight?.insights?.length ? (
+              insight.insights.map((msg, i) => {
+                const isUp = msg.startsWith('📈')
+                const isDown = msg.startsWith('📉')
+                const isWarn = msg.startsWith('⚠️')
+                const accent = isDown ? 'border-l-neon-green/40' : isUp || isWarn ? 'border-l-neon-red/40' : 'border-l-neon-blue/30'
+                return (
+                  <div
+                    key={i}
+                    className={`flex gap-3 px-5 py-4 border-l-2 ${accent} animate-slide-up fill-both`}
+                    style={{ animationDelay: `${150 + i * 60}ms` }}
+                  >
+                    <span className="text-lg shrink-0 mt-0.5">{msg.split(' ')[0]}</span>
+                    <p className="text-sm text-ink-700 leading-relaxed">{msg.slice(msg.indexOf(' ') + 1)}</p>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="p-6 text-sm text-ink-500">No insights available yet. Generate a report to see category summaries and trends.</div>
+            )}
           </div>
         </div>
 
-        {/* Category spending breakdown */}
         <div className="card p-5 animate-slide-up fill-both delay-200">
           <h2 className="font-display font-semibold text-sm text-ink-900 mb-5">Category Breakdown</h2>
           <div className="space-y-4">
-            {catEntries.map(([cat, amt], i) => {
-              const pct   = ((amt / catMax) * 100).toFixed(1)
-              const color = catColor(cat)
+            {catEntries.length ? catEntries.map(([category, amount], i) => {
+              const pct = ((amount / catMax) * 100).toFixed(1)
+              const color = catColor(category)
               return (
-                <div key={cat} className="animate-slide-up fill-both" style={{ animationDelay: `${200 + i * 50}ms` }}>
+                <div key={category} className="animate-slide-up fill-both" style={{ animationDelay: `${200 + i * 50}ms` }}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">{catEmoji(cat)}</span>
-                      <span className="text-sm font-medium text-ink-700 capitalize">{cat}</span>
+                      <span className="text-base">{catEmoji(category)}</span>
+                      <span className="text-sm font-medium text-ink-700 capitalize">{category}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-ink-500">{pct}%</span>
-                      <span className="font-mono text-sm font-semibold text-ink-900">{fmt(amt)}</span>
+                      <span className="font-mono text-sm font-semibold text-ink-900">{fmt(amount)}</span>
                     </div>
                   </div>
                   <div className="progress-track">
@@ -140,13 +198,13 @@ export default function Insights() {
                   </div>
                 </div>
               )
-            })}
+            }) : (
+              <div className="text-sm text-ink-500">No category breakdown available yet.</div>
+            )}
           </div>
         </div>
-
       </div>
 
-      {/* Monthly comparison table */}
       <div className="card overflow-hidden animate-slide-up fill-both delay-300">
         <div className="px-5 py-4 border-b border-obsidian-700">
           <h2 className="font-display font-semibold text-sm text-ink-900">Month-over-Month Comparison</h2>
@@ -164,17 +222,16 @@ export default function Insights() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_MONTHLY_TREND.map((m, i) => {
-                const saved   = m.income - m.expenses
-                const rate    = ((saved / m.income) * 100).toFixed(1)
-                const prev    = MOCK_MONTHLY_TREND[i - 1]
-                const expDiff = prev ? (((m.expenses - prev.expenses) / prev.expenses) * 100).toFixed(1) : null
-
+              {monthlyTrend.map((m, i) => {
+                const saved = (m.income ?? 0) - (m.expenses ?? 0)
+                const rate = m.income ? ((saved / m.income) * 100).toFixed(1) : '0.0'
+                const prev = monthlyTrend[i - 1]
+                const expDiff = prev ? (((m.expenses ?? 0) - (prev.expenses ?? 0)) / Math.max(prev.expenses ?? 1, 1) * 100).toFixed(1) : null
                 return (
-                  <tr key={m.month} className="animate-slide-up fill-both" style={{ animationDelay: `${300 + i * 40}ms` }}>
-                    <td className="font-semibold text-ink-900">{m.month}</td>
-                    <td className="text-right font-mono text-neon-green text-sm">+{fmt(m.income)}</td>
-                    <td className="text-right font-mono text-neon-red text-sm">-{fmt(m.expenses)}</td>
+                  <tr key={m.label} className="animate-slide-up fill-both" style={{ animationDelay: `${300 + i * 40}ms` }}>
+                    <td className="font-semibold text-ink-900">{m.label}</td>
+                    <td className="text-right font-mono text-neon-green text-sm">+{fmt(m.income ?? 0)}</td>
+                    <td className="text-right font-mono text-neon-red text-sm">-{fmt(m.expenses ?? 0)}</td>
                     <td className="text-right font-mono font-semibold text-sm text-ink-900">{fmt(saved)}</td>
                     <td className="text-right">
                       <Badge variant={parseFloat(rate) >= 20 ? 'green' : 'yellow'}>{rate}%</Badge>

@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, Wallet as WalletIcon, Plus, RefreshCw } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
-import { useApp } from '../context/AppContext.jsx'
-import { MOCK_TRANSACTIONS } from '../utils/constants.js'
+import { useApp } from '../hooks/useApp.js'
+import { api } from '../utils/api.js'
 import { fmt, fmtCompact, fmtDate } from '../utils/helpers.js'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD']
@@ -15,26 +15,72 @@ export default function Wallet() {
   const [topUpOpen, setTopUpOpen]   = useState(false)
   const [topUpAmount, setTopUpAmount] = useState('')
   const [currency, setCurrency]     = useState(user.currency)
+  const [transactions, setTransactions] = useState([])
+  const [walletLoading, setWalletLoading] = useState(false)
 
-  const credits  = MOCK_TRANSACTIONS.filter(t => t.type === 'credit')
-  const debits   = MOCK_TRANSACTIONS.filter(t => t.type === 'debit')
+  const credits  = transactions.filter(t => t.type === 'credit')
+  const debits   = transactions.filter(t => t.type === 'debit')
   const totalIn  = credits.reduce((s, t) => s + t.amount, 0)
   const totalOut = debits.reduce((s, t) => s + t.amount, 0)
 
-  const handleTopUp = (e) => {
+  useEffect(() => {
+    const loadWallet = async () => {
+      if (!user) return
+      setWalletLoading(true)
+      try {
+        const [walletResult, txnResult] = await Promise.all([
+          api.users.getWallet(),
+          api.transactions.list({ limit: 20, page: 1 }),
+        ])
+        const wallet = walletResult.data?.wallet ?? walletResult.wallet
+        const txns = txnResult.data?.transactions ?? txnResult.transactions ?? []
+        if (wallet) {
+          setUser(u => ({ ...u, walletBalance: wallet.balance ?? wallet.amount ?? u.walletBalance }))
+        }
+        setTransactions(txns)
+      } catch (error) {
+        showToast(error.message || 'Unable to load wallet data', 'error')
+      } finally {
+        setWalletLoading(false)
+      }
+    }
+
+    loadWallet()
+  }, [user])
+
+  useEffect(() => {
+    setCurrency(user.currency)
+  }, [user.currency])
+
+  const handleTopUp = async (e) => {
     e.preventDefault()
     const amount = parseFloat(topUpAmount)
     if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
-    setUser(u => ({ ...u, walletBalance: u.walletBalance + amount }))
-    showToast(`${fmt(amount)} added to your wallet`, 'success')
-    setTopUpOpen(false)
-    setTopUpAmount('')
+
+    try {
+      const result = await api.users.topUpWallet({ amount })
+      const wallet = result.data?.wallet ?? result.wallet
+      if (wallet) {
+        setUser(u => ({ ...u, walletBalance: wallet.balance ?? wallet.amount ?? u.walletBalance }))
+      }
+      showToast(`$${amount.toFixed(2)} added to wallet`, 'success')
+      setTopUpOpen(false)
+      setTopUpAmount('')
+    } catch (error) {
+      showToast(error.message || 'Unable to top up wallet', 'error')
+    }
   }
 
-  const handleCurrencyChange = (e) => {
+  const handleCurrencyChange = async (e) => {
     setCurrency(e.target.value)
-    setUser(u => ({ ...u, currency: e.target.value }))
-    showToast(`Currency updated to ${e.target.value}`, 'success')
+    try {
+      const updateResult = await api.users.updateProfile({ currency: e.target.value })
+      const updated = updateResult.data?.user ?? updateResult.user
+      if (updated) setUser(updated)
+      showToast(`Currency updated to ${e.target.value}`, 'success')
+    } catch (error) {
+      showToast(error.message || 'Unable to update currency', 'error')
+    }
   }
 
   const quickAmounts = [500, 1000, 5000, 10000]
@@ -116,7 +162,7 @@ export default function Wallet() {
             <h2 className="font-display font-semibold text-sm text-ink-900">Balance History</h2>
           </div>
           <div className="divide-y divide-obsidian-700 max-h-80 overflow-y-auto">
-            {MOCK_TRANSACTIONS.slice(0, 8).map((t, i) => (
+            {transactions.slice(0, 8).map((t, i) => (
               <div key={t._id} className="flex items-center gap-3 px-5 py-3 animate-slide-up fill-both" style={{ animationDelay: `${100 + i * 40}ms` }}>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === 'credit' ? 'bg-neon-green/10' : 'bg-neon-red/10'}`}>
                   {t.type === 'credit'
