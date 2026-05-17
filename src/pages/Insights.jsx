@@ -5,6 +5,7 @@ import Badge from '../components/ui/Badge.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { fmt, fmtCompact, catEmoji, catColor } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 
 const monthLabel = (year, month) => {
   const date = new Date(year, month - 1, 1)
@@ -96,14 +97,13 @@ export default function Insights() {
               value={period}
               onChange={e => setPeriod(e.target.value)}
             />
-            <button
-              onClick={handleGenerate}
+            <PrimaryBtn
+              handleClick={handleGenerate}
               disabled={generating}
-              className="btn-primary"
             >
               <RefreshCw size={14} className={generating ? 'animate-spin' : ''} />
               {generating ? 'Generating…' : 'Generate'}
-            </button>
+            </PrimaryBtn>
           </div>
         }
       />

@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { TrendingUp, ArrowRight, Eye, EyeOff, Shield, BarChart3, Zap } from 'lucide-react'
-import { FormGroup, Input } from '../components/ui/Form.jsx'
-import { useApp } from '../hooks/useApp.js'
-import { api } from '../utils/api.js'
+import { FormGroup, Input } from '../../components/ui/Form.jsx'
+import { useApp } from '../../hooks/useApp.js'
+import { api } from '../../utils/api.js'
 
 const FEATURES = [
   { icon: BarChart3, text: 'Category-wise spending charts'     },
@@ -11,100 +11,16 @@ const FEATURES = [
   { icon: TrendingUp,text: 'Smart budget alerts & tracking'    },
 ]
 
-function AuthLeft() {
-  return (
-    <div className="hidden lg:flex flex-col justify-center px-14 py-16 bg-obsidian-900 border-r border-obsidian-700 relative overflow-hidden">
-      {/* bg glows */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-neon-green/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-neon-blue/5 blur-2xl pointer-events-none" />
+import OtpInput from './OtpInput.jsx'
+import { useNavigate } from 'react-router-dom'
+import SessionHelper from '../../utils/SessionHelper.js'
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-neon-green to-neon-blue flex items-center justify-center shadow-neon-green">
-            <TrendingUp size={18} className="text-obsidian-950 stroke-[2.5]" />
-          </div>
-          <span className="font-display font-bold text-2xl text-ink-900 tracking-tight">FinTrack</span>
-        </div>
+const Auth = () => {
 
-        <h1 className="font-display font-bold text-4xl text-ink-900 leading-tight tracking-tight mb-4">
-          Your money,<br />
-          <span className="text-neon-green">fully visible.</span>
-        </h1>
-        <p className="text-ink-500 text-base leading-relaxed mb-10 max-w-sm">
-          Track spending, manage budgets, and get AI-powered insights — all in one clean dashboard.
-        </p>
+  const navigate = useNavigate()
 
-        <div className="space-y-4">
-          {FEATURES.map(({ icon: Icon, text }, i) => (
-            <div key={i} className="flex items-center gap-3 animate-slide-up fill-both" style={{ animationDelay: `${i * 80}ms` }}>
-              <div className="w-8 h-8 rounded-xl bg-obsidian-700 border border-obsidian-600 flex items-center justify-center shrink-0">
-                <Icon size={14} className="text-neon-green" />
-              </div>
-              <span className="text-sm text-ink-700">{text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function OtpInput({ onComplete, loading }) {
-  const refs = useRef([])
-  const [vals, setVals] = useState(['', '', '', '', '', ''])
-
-  const update = (idx, val) => {
-    const v = val.replace(/\D/g, '').slice(-1)
-    const next = [...vals]
-    next[idx] = v
-    setVals(next)
-    if (v && idx < 5) refs.current[idx + 1]?.focus()
-    if (next.every(c => c !== '')) onComplete(next.join(''))
-  }
-
-  const handleKey = (idx, e) => {
-    if (e.key === 'Backspace' && !vals[idx] && idx > 0) refs.current[idx - 1]?.focus()
-  }
-
-  const handlePaste = (e) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (pasted.length === 6) {
-      const next = pasted.split('')
-      setVals(next)
-      refs.current[5]?.focus()
-      onComplete(pasted)
-    }
-    e.preventDefault()
-  }
-
-  return (
-    <div className="flex gap-3 justify-center my-6">
-      {vals.map((v, i) => (
-        <input
-          key={i}
-          ref={el => refs.current[i] = el}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={v}
-          onChange={e => update(i, e.target.value)}
-          onKeyDown={e => handleKey(i, e)}
-          onPaste={handlePaste}
-          disabled={loading}
-          className={`w-12 h-14 text-center font-display font-bold text-2xl rounded-xl border transition-all duration-150 outline-none
-            bg-obsidian-700 text-ink-900
-            ${v ? 'border-neon-green/50 shadow-neon-green' : 'border-obsidian-500'}
-            focus:border-neon-blue/50 focus:ring-2 focus:ring-neon-blue/10
-            disabled:opacity-50`}
-        />
-      ))}
-    </div>
-  )
-}
-
-export default function Auth() {
-  const { navigate, showToast, setUser, setUserToken } = useApp()
-  const [view, setView]       = useState('login')      // login | register | otp
+  const { showToast, setUser, setUserToken } = useApp()
+  const [view, setView]       = useState('login') 
   const [otpEmail, setOtpEmail] = useState('')
   const [otpPurpose, setOtpPurpose] = useState('login')
   const [showPass, setShowPass] = useState(false)
@@ -154,20 +70,22 @@ export default function Auth() {
     try {
       if (otpPurpose === 'login') {
         const result = await api.auth.verifyLogin({ email: otpEmail, otp: code })
-        const user = result.data?.user 
-        const token = result.data?.accessToken
-        if (user && token) {
-          setUser(user)
+        const user = result.data?.user ?? result.user
+        const token = result.data?.accessToken ?? result.accessToken
+
+        if (token) {
           setUserToken(token)
-          window.localStorage?.setItem('fintrackLoggedIn', 'true')
-          showToast('Welcome back!', 'success')
-          navigate('dashboard')
-        } else if (user) {
-          setUser(user)
-          window.localStorage?.setItem('fintrackLoggedIn', 'true')
-          showToast('Welcome back!', 'success')
-          navigate('dashboard')
         }
+
+        if (user) {
+          setUser(user)
+          showToast('Welcome back!', 'success')
+          navigate('/dashboard')
+          SessionHelper.setUserDetails(user)
+          return
+        }
+
+        throw new Error('Unable to authenticate user')
       } else {
         await api.auth.verifyEmail({ email: otpEmail, otp: code })
         showToast('Email verified successfully. Please sign in.', 'success')
@@ -193,18 +111,51 @@ export default function Auth() {
       setLoading(false)
     }
   }
-
   return (
-    <div className="min-h-screen bg-obsidian-950 grid lg:grid-cols-2">
-      <AuthLeft />
+    <div  className="min-h-screen bg-obsidian-950 grid lg:grid-cols-2">
+      {/** LEFT */}
+    <div className="hidden lg:flex flex-col justify-center px-14 py-16 bg-obsidian-900 border-r border-obsidian-700 relative overflow-hidden">
+      {/* bg glows */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-neon-green/5 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-neon-blue/5 blur-2xl pointer-events-none" />
 
-      {/* Right panel */}
-      <div className="flex items-center justify-center px-8 py-12 bg-obsidian-950">
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-neon-green to-neon-blue flex items-center justify-center shadow-neon-green">
+            <TrendingUp size={18} className="text-obsidian-950 stroke-[2.5]" />
+          </div>
+          <span className="font-display font-bold text-2xl text-ink-900 tracking-tight">FinTrack</span>
+        </div>
+
+        <h1 className="font-display font-bold text-4xl text-ink-900 leading-tight tracking-tight mb-4">
+          Your money,<br />
+          <span className="text-neon-green">fully visible.</span>
+        </h1>
+        <p className="text-ink-500 text-base leading-relaxed mb-10 max-w-sm">
+          Track spending, manage budgets, and get AI-powered insights — all in one clean dashboard.
+        </p>
+
+        <div className="space-y-4">
+          {FEATURES.map(({ icon: Icon, text }, i) => (
+            <div key={i} className="flex items-center gap-3 animate-slide-up fill-both" style={{ animationDelay: `${i * 80}ms` }}>
+              <div className="w-8 h-8 rounded-xl bg-obsidian-700 border border-obsidian-600 flex items-center justify-center shrink-0">
+                <Icon size={14} className="text-neon-green" />
+              </div>
+              <span className="text-sm text-ink-700">{text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/**RIGHT */}
+
+    <div className="flex items-center justify-center px-8 py-12 bg-obsidian-950">
         <div className="w-full max-w-sm animate-slide-up fill-both">
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neon-green to-neon-blue flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-br from-neon-green to-neon-blue flex items-center justify-center">
               <TrendingUp size={15} className="text-obsidian-950 stroke-[2.5]" />
             </div>
             <span className="font-display font-bold text-xl text-ink-900">FinTrack</span>
@@ -329,6 +280,9 @@ export default function Auth() {
 
         </div>
       </div>
+    
     </div>
   )
 }
+
+export default Auth

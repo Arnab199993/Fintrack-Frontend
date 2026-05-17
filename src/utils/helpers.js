@@ -1,12 +1,19 @@
 import { CATEGORY_META } from './constants.js'
 
+const toNumber = (value) => {
+  const amount = typeof value === 'string' ? value.trim() : value
+  const parsed = Number(amount)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 export const fmt = (amount, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount)
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(toNumber(amount))
 
 export const fmtCompact = (amount, currency = 'USD') => {
-  if (Math.abs(amount) >= 1_000_000) return `${currency === 'USD' ? '$' : ''}${(amount/1_000_000).toFixed(2)}M`
-  if (Math.abs(amount) >= 1_000)     return `${currency === 'USD' ? '$' : ''}${(amount/1_000).toFixed(1)}K`
-  return fmt(amount, currency)
+  const value = toNumber(amount)
+  if (Math.abs(value) >= 1_000_000) return `${currency === 'USD' ? '$' : ''}${(value / 1_000_000).toFixed(2)}M`
+  if (Math.abs(value) >= 1_000)     return `${currency === 'USD' ? '$' : ''}${(value / 1_000).toFixed(1)}K`
+  return fmt(value, currency)
 }
 
 export const fmtDate = (d) =>

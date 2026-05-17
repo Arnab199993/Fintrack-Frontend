@@ -9,6 +9,8 @@ import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { CATEGORIES } from '../utils/constants.js'
 import { fmt, catEmoji, catColor } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
+import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
 const STATUS_CONFIG = {
   healthy:  { variant: 'green',  icon: CheckCircle,    label: 'Healthy'  },
@@ -104,7 +106,7 @@ export default function Budgets() {
       <PageHeader
         title="Budgets"
         subtitle="Track and manage your spending limits"
-        action={<button onClick={openAdd} className="btn-primary"><Plus size={15} /> New Budget</button>}
+        action={<PrimaryBtn handleClick={openAdd}><Plus size={15} /> New Budget</PrimaryBtn>}
       />
 
       {/* Summary row */}
@@ -138,7 +140,7 @@ export default function Budgets() {
 
       {/* Budget cards grid */}
       {visible.length === 0 ? (
-        <div className="card"><EmptyState icon="◎" title="No budgets found" sub="Create a budget to start tracking your spending limits" action={<button onClick={openAdd} className="btn-primary"><Plus size={14}/> Create Budget</button>} /></div>
+        <div className="card"><EmptyState icon="◎" title="No budgets found" sub="Create a budget to start tracking your spending limits" action={<PrimaryBtn handleClick={openAdd}><Plus size={14}/> Create Budget</PrimaryBtn>} /></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {visible.map((b, i) => {
@@ -237,8 +239,8 @@ export default function Budgets() {
             <Input type="number" min="1" max="100" placeholder="80" value={form.alertThreshold} onChange={e => setForm(f => ({ ...f, alertThreshold: e.target.value }))} />
           </FormGroup>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="btn-primary flex-1">{editTarget ? 'Save Changes' : 'Create Budget'}</button>
-            <button type="button" className="btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+            <PrimaryBtn size={"large"} type="submit">{editTarget ? 'Save Changes' : 'Create Budget'}</PrimaryBtn>
+            <SecondaryBtn type="button" handleClick={() => setModalOpen(false)}>Cancel</SecondaryBtn>
           </div>
         </form>
       </Modal>

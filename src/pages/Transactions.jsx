@@ -9,6 +9,8 @@ import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { CATEGORIES } from '../utils/constants.js'
 import { fmt, fmtDate, catEmoji, todayISO } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
+import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
 const EMPTY_FORM = { type: 'debit', amount: '', category: 'food', description: '', date: todayISO(), tags: '' }
 
@@ -158,14 +160,14 @@ export default function Transactions() {
         title="Transactions"
         subtitle={`${totalCount} total transactions`}
         action={
-          <button onClick={openAdd} className="btn-primary">
+          <PrimaryBtn handleClick={openAdd}>
             <Plus size={15} /> Add Transaction
-          </button>
+          </PrimaryBtn>
         }
       />
 
       <div className="card p-4 flex flex-wrap items-center gap-3 animate-slide-up fill-both">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-50">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
           <input
             className="field pl-9"
@@ -312,10 +314,10 @@ export default function Transactions() {
             </FormGroup>
           )}
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="btn-primary flex-1">
+            <PrimaryBtn size={"large"} type="submit" disabled={saving} className="btn-primary flex-1">
               {saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Add Transaction'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => { setModalOpen(false); setReceiptFile(null) }}>Cancel</button>
+            </PrimaryBtn>
+            <SecondaryBtn handleClick={() => { setModalOpen(false); setReceiptFile(null) }}>Cancel</SecondaryBtn>
           </div>
         </form>
       </Modal>

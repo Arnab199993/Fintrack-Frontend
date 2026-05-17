@@ -6,6 +6,7 @@ import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { fmt } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD', 'JPY']
 const TABS = [
@@ -15,14 +16,21 @@ const TABS = [
 
 export default function Profile() {
   const { user, setUser, showToast } = useApp()
-  const [tab, setTab]       = useState('profile')
-  const [form, setForm]     = useState({ firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone || '', currency: user.currency })
+  const [tab, setTab] = useState('profile')
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', currency: 'USD' })
   const [passForm, setPassForm] = useState({ current: '', newPass: '', confirm: '' })
   const [saving, setSaving] = useState(false)
-  const initials = `${user.firstName[0]}${user.lastName[0]}`
+  const initials = user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : ''
 
   useEffect(() => {
-    setForm({ firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone || '', currency: user.currency })
+    if (!user) return
+    setForm({
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      currency: user.currency ?? 'USD',
+    })
   }, [user])
 
   const handleProfileSave = async (e) => {
@@ -58,6 +66,10 @@ export default function Profile() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (!user) {
+    return <div className="flex items-center justify-center min-h-screen">Loading profile...</div>
   }
 
   return (
@@ -134,10 +146,10 @@ export default function Profile() {
               </Select>
             </FormGroup>
             <div className="pt-2">
-              <button type="submit" disabled={saving} className="btn-primary gap-2">
+              <PrimaryBtn type="submit" disabled={saving}>
                 <Save size={14} className={saving ? 'animate-pulse' : ''} />
                 {saving ? 'Saving…' : 'Save Changes'}
-              </button>
+              </PrimaryBtn>
             </div>
           </form>
         </div>
@@ -160,10 +172,10 @@ export default function Profile() {
                 <Input type="password" placeholder="Repeat new password" value={passForm.confirm} onChange={e => setPassForm(f => ({ ...f, confirm: e.target.value }))} required />
               </FormGroup>
               <div className="pt-2">
-                <button type="submit" disabled={saving} className="btn-primary gap-2">
+                <PrimaryBtn type="submit" disabled={saving}>
                   <Lock size={14} />
                   {saving ? 'Updating…' : 'Change Password'}
-                </button>
+                </PrimaryBtn>
               </div>
             </form>
           </div>

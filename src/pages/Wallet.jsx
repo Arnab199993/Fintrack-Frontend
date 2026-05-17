@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight, Wallet as WalletIcon, Plus, RefreshCw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowDownLeft, ArrowUpRight, Wallet as WalletIcon, Plus } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import Modal from '../components/ui/Modal.jsx'
@@ -7,14 +7,28 @@ import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { fmt, fmtCompact, fmtDate } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
+import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD']
 
+const toNumber = (value) => {
+  const amount = typeof value === 'string' ? value.trim() : value
+  const parsed = Number(amount)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const extractWalletBalance = (wallet) => {
+  if (!wallet) return 0
+  return toNumber(wallet.balance ?? wallet.amount ?? wallet.walletBalance ?? wallet.balanceAmount ?? wallet.total ?? wallet.value)
+}
+
 export default function Wallet() {
-  const { user, setUser, showToast } = useApp()
+  const isMounted = useRef(false);
+  const { user, setUser, updateUserProfile, showToast } = useApp()
   const [topUpOpen, setTopUpOpen]   = useState(false)
   const [topUpAmount, setTopUpAmount] = useState('')
-  const [currency, setCurrency]     = useState(user.currency)
+  const [currency, setCurrency]     = useState(user?.currency ?? 'USD')
   const [transactions, setTransactions] = useState([])
   const [walletLoading, setWalletLoading] = useState(false)
 
@@ -23,53 +37,73 @@ export default function Wallet() {
   const totalIn  = credits.reduce((s, t) => s + t.amount, 0)
   const totalOut = debits.reduce((s, t) => s + t.amount, 0)
 
-  useEffect(() => {
-    const loadWallet = async () => {
-      if (!user) return
-      setWalletLoading(true)
-      try {
-        const [walletResult, txnResult] = await Promise.all([
-          api.users.getWallet(),
-          api.transactions.list({ limit: 20, page: 1 }),
-        ])
-        const wallet = walletResult.data?.wallet ?? walletResult.wallet
-        const txns = txnResult.data?.transactions ?? txnResult.transactions ?? []
-        if (wallet) {
-          setUser(u => ({ ...u, walletBalance: wallet.balance ?? wallet.amount ?? u.walletBalance }))
-        }
-        setTransactions(txns)
-      } catch (error) {
-        showToast(error.message || 'Unable to load wallet data', 'error')
-      } finally {
-        setWalletLoading(false)
-      }
-    }
+  const walletBalance = toNumber(user?.walletBalance)
+  const topUpValue = toNumber(topUpAmount)
 
-    loadWallet()
-  }, [user])
-
-  useEffect(() => {
-    setCurrency(user.currency)
-  }, [user.currency])
-
-  const handleTopUp = async (e) => {
-    e.preventDefault()
-    const amount = parseFloat(topUpAmount)
-    if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
-
+  const loadWallet = async () => {
+    if (!user) return
+    setWalletLoading(true)
     try {
-      const result = await api.users.topUpWallet({ amount })
-      const wallet = result.data?.wallet ?? result.wallet
-      if (wallet) {
-        setUser(u => ({ ...u, walletBalance: wallet.balance ?? wallet.amount ?? u.walletBalance }))
+      const [walletResult, txnResult] = await Promise.all([
+        api.users.getWallet(),
+        api.transactions.list({ limit: 20, page: 1 }),
+      ])
+      const txns = txnResult.data?.transactions ?? txnResult.transactions ?? []
+      const walletPayload = walletResult.data?.wallet ?? walletResult.wallet ?? walletResult.data ?? walletResult
+      const balance = extractWalletBalance(walletPayload)
+      if (walletPayload) {
+        // Use updateUserProfile (merges) instead of setUser with functional update
+        updateUserProfile({ walletBalance: balance })
       }
-      showToast(`$${amount.toFixed(2)} added to wallet`, 'success')
-      setTopUpOpen(false)
-      setTopUpAmount('')
+      setTransactions(txns)
     } catch (error) {
-      showToast(error.message || 'Unable to top up wallet', 'error')
+      showToast(error.message || 'Unable to load wallet data', 'error')
+    } finally {
+      setWalletLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (isMounted.current) return;
+    loadWallet()
+    isMounted.current = true;
+  }, [])
+
+  useEffect(() => {
+    setCurrency(user?.currency ?? 'USD')
+  }, [user?.currency])
+
+const handleTopUp = async (e) => {
+  e.preventDefault()
+  const amount = parseFloat(topUpAmount)
+  if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
+
+  // Optimistic update so UI reflects the change instantly
+  const optimisticBalance = walletBalance + amount
+  updateUserProfile({ walletBalance: optimisticBalance })
+
+  try {
+    const result = await api.users.topUpWallet({ amount })
+    const walletPayload = result.data?.wallet ?? result.wallet ?? result.data ?? result
+    const confirmedBalance = extractWalletBalance(walletPayload)
+
+    // Use confirmed balance from server if available, otherwise keep optimistic
+    if (confirmedBalance > 0) {
+      updateUserProfile({ walletBalance: confirmedBalance })
+    }
+
+    showToast(`$${amount.toFixed(2)} added to wallet`, 'success')
+    setTopUpOpen(false)
+    setTopUpAmount('')
+
+    // Re-sync wallet in background to get accurate server state
+    loadWallet()
+  } catch (error) {
+    // Revert optimistic update on failure
+    updateUserProfile({ walletBalance: walletBalance })
+    showToast(error.message || 'Unable to top up wallet', 'error')
+  }
+}
 
   const handleCurrencyChange = async (e) => {
     setCurrency(e.target.value)
@@ -86,44 +120,39 @@ export default function Wallet() {
   const quickAmounts = [500, 1000, 5000, 10000]
 
   return (
-    <div className="space-y-6">
+    <div ref={isMounted} className="space-y-6">
       <PageHeader
         title="Wallet"
         subtitle="Your virtual finance account"
         action={
-          <button onClick={() => setTopUpOpen(true)} className="btn-primary">
+          <PrimaryBtn handleClick={() => setTopUpOpen(true)}>
             <Plus size={14} /> Top Up
-          </button>
+          </PrimaryBtn>
         }
       />
 
       {/* Main wallet card */}
-      <div className="relative overflow-hidden rounded-2xl border border-neon-blue/20 bg-gradient-to-br from-[#0d1b2e] via-obsidian-800 to-obsidian-900 p-8 animate-slide-up fill-both">
+      <div className="relative overflow-hidden rounded-2xl border border-neon-blue/20 bg-linear-to-br from-[#0d1b2e] via-obsidian-800 to-obsidian-900 p-8 animate-slide-up fill-both">
         <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-neon-blue/8 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-neon-green/5 blur-2xl pointer-events-none" />
-
-        {/* Card decoration */}
-        <div className="absolute top-4 right-6 opacity-10">
-          <WalletIcon size={80} className="text-neon-blue" />
-        </div>
 
         <div className="relative">
           <div className="flex items-start justify-between mb-6">
             <div>
               <p className="section-label text-neon-blue/60 mb-2">Available Balance</p>
               <p className="font-display font-bold text-5xl tracking-tight text-white">
-                {fmtCompact(user.walletBalance, currency)}
+                {fmtCompact(walletBalance, currency)}
               </p>
-              <p className="text-sm text-ink-500 mt-2">{user.firstName} {user.lastName}</p>
+              <p className="text-sm text-ink-500 mt-2">{user?.firstName} {user?.lastName}</p>
             </div>
             <div>
+              <div className='section-label mb-2'>Select Currency</div>
               <Select value={currency} onChange={handleCurrencyChange} className="w-24 text-center bg-white/5 border-white/10 text-ink-700 text-sm">
                 {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
               </Select>
             </div>
           </div>
 
-          {/* Quick stats */}
           <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -145,17 +174,7 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <div className="flex items-start gap-3 rounded-xl border border-neon-yellow/20 bg-neon-yellow/5 px-4 py-3">
-        <span className="text-neon-yellow text-lg">⚠️</span>
-        <p className="text-xs text-ink-500 leading-relaxed">
-          <span className="font-semibold text-neon-yellow">Simulated wallet — </span>
-          No real money transactions happen. This is a demo environment for tracking purposes only.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         {/* Balance history */}
         <div className="card overflow-hidden animate-slide-up fill-both delay-100">
           <div className="px-5 py-4 border-b border-obsidian-700">
@@ -187,17 +206,17 @@ export default function Wallet() {
           </div>
         </div>
 
-        {/* Quick stats breakdown */}
+        {/* Account summary */}
         <div className="flex flex-col gap-4">
           <div className="card p-5 animate-slide-up fill-both delay-200">
             <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">Account Summary</h2>
             <div className="space-y-3">
               {[
-                { label: 'Starting Balance', value: fmt(0),                              color: 'text-ink-700' },
-                { label: 'Total Credits',    value: `+${fmt(totalIn)}`,                  color: 'text-neon-green' },
-                { label: 'Total Debits',     value: `-${fmt(totalOut)}`,                 color: 'text-neon-red' },
-                { label: 'Net Change',       value: fmt(totalIn - totalOut),             color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },
-                { label: 'Current Balance',  value: fmt(user.walletBalance),             color: 'text-neon-blue' },
+                { label: 'Starting Balance', value: fmt(0),                    color: 'text-ink-700' },
+                { label: 'Total Credits',    value: `+${fmt(totalIn)}`,        color: 'text-neon-green' },
+                { label: 'Total Debits',     value: `-${fmt(totalOut)}`,       color: 'text-neon-red' },
+                { label: 'Net Change',       value: fmt(totalIn - totalOut),   color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },
+                { label: 'Current Balance',  value: fmt(walletBalance),        color: 'text-neon-blue' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between py-2 border-b border-obsidian-700 last:border-0">
                   <span className="text-sm text-ink-500">{row.label}</span>
@@ -207,7 +226,6 @@ export default function Wallet() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Top Up Modal */}
@@ -215,9 +233,8 @@ export default function Wallet() {
         <form onSubmit={handleTopUp} className="space-y-4">
           <div className="rounded-xl border border-neon-blue/20 bg-neon-blue/5 p-4 text-center">
             <p className="section-label mb-1">Current Balance</p>
-            <p className="font-display font-bold text-3xl text-neon-blue">{fmt(user.walletBalance)}</p>
+            <p className="font-display font-bold text-3xl text-neon-blue">{fmt(walletBalance)}</p>
           </div>
-
           <FormGroup label="Amount to Add">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">$</span>
@@ -231,7 +248,6 @@ export default function Wallet() {
             </div>
           </FormGroup>
 
-          {/* Quick amounts */}
           <div>
             <p className="field-label mb-2">Quick Select</p>
             <div className="grid grid-cols-4 gap-2">
@@ -246,24 +262,24 @@ export default function Wallet() {
                       : 'bg-obsidian-700 border-obsidian-600 text-ink-500 hover:text-ink-700'
                   }`}
                 >
-                  ${a >= 1000 ? `${a/1000}K` : a}
+                  ${a >= 1000 ? `${a / 1000}K` : a}
                 </button>
               ))}
             </div>
           </div>
 
-          {topUpAmount && !isNaN(topUpAmount) && parseFloat(topUpAmount) > 0 && (
+          {topUpAmount && !Number.isNaN(topUpValue) && topUpValue > 0 && (
             <div className="rounded-xl border border-neon-green/20 bg-neon-green/5 p-3 text-center">
               <p className="text-xs text-ink-500 mb-0.5">New balance after top up</p>
               <p className="font-display font-bold text-xl text-neon-green">
-                {fmt(user.walletBalance + parseFloat(topUpAmount))}
+                {fmt(walletBalance + topUpValue)}
               </p>
             </div>
           )}
 
           <div className="flex gap-3">
-            <button type="submit" className="btn-primary flex-1">Confirm Top Up</button>
-            <button type="button" className="btn-secondary" onClick={() => setTopUpOpen(false)}>Cancel</button>
+            <PrimaryBtn size={"large"} type="submit" className="btn-primary flex-1 p-2 cursor-pointer">Confirm Top Up</PrimaryBtn>
+            <SecondaryBtn handleClick={() => setTopUpOpen(false)}>Cancel</SecondaryBtn>
           </div>
         </form>
       </Modal>

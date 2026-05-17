@@ -8,6 +8,8 @@ import EmptyState from '../components/ui/EmptyState.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { fmtRelative } from '../utils/helpers.js'
+import PrimaryBtn from '../constant/PrimaryBtn.jsx'
+import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
 const TYPE_CONFIG = {
   budget_exceeded:   { icon: AlertTriangle, color: 'text-neon-red',    bg: 'bg-neon-red/10',    badge: 'red',    label: 'Exceeded'    },
@@ -102,7 +104,7 @@ export default function Alerts() {
                 <CheckCheck size={14} /> Mark all read
               </button>
             )}
-            <button onClick={() => setSettingsOpen(true)} className="btn-secondary gap-2 text-sm">
+            <button onClick={() => setSettingsOpen(true)} className="btn-secondary gap-2 text-sm p-2 flex justify-center items-center cursor-pointer">
               <Settings size={14} /> Settings
             </button>
           </div>
@@ -245,8 +247,8 @@ export default function Alerts() {
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button type="submit" className="btn-primary flex-1">Save Settings</button>
-            <button type="button" className="btn-secondary" onClick={() => setSettingsOpen(false)}>Cancel</button>
+            <PrimaryBtn size={"large"} type="submit">Save Settings</PrimaryBtn>
+            <SecondaryBtn handleClick={() => setSettingsOpen(false)}>Cancel</SecondaryBtn>
           </div>
         </form>
       </Modal>

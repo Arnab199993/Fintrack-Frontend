@@ -1,37 +1,27 @@
-import { useSelector } from 'react-redux'
-import { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
-import AppShell from './layouts/AppShell.jsx'
+import React, { useEffect } from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import Auth from './pages/Auth/Auth'
+import ProtectedRoute from './Protected/ProtectedRoute'
+import Dashboard from './pages/Dashboard'
+import Sidebar from './layouts/Sidebar'
+import Wallet from './pages/Wallet'
 import Toast from './components/ui/Toast.jsx'
-import Auth from './pages/Auth.jsx'
-import Dashboard from './pages/Dashboard.jsx'
+import { api } from './utils/api.js'
+import { setAuthReady } from './store/slices/appSlice.js'
+import { setUserProfile, clearUserProfile } from './store/slices/userSlice.js'
+import { clearAuth } from './store/slices/authSlice.js'
 import Transactions from './pages/Transactions.jsx'
 import Budgets from './pages/Budgets.jsx'
 import Insights from './pages/Insights.jsx'
 import Alerts from './pages/Alerts.jsx'
-import Wallet from './pages/Wallet.jsx'
 import Profile from './pages/Profile.jsx'
-import { setUserProfile, clearUserProfile } from './store/slices/userSlice.js'
-import { setAuthReady } from './store/slices/appSlice.js'
-import { api } from './utils/api.js'
 
-const PAGE_MAP = {
-  dashboard:    Dashboard,
-  transactions: Transactions,
-  budgets:      Budgets,
-  insights:     Insights,
-  alerts:       Alerts,
-  wallet:       Wallet,
-  profile:      Profile,
-}
-
-export default function App() {
+const App = () => {
   const dispatch = useDispatch()
-  const currentPage = useSelector(state => state.app.currentPage)
-  const isAuthenticated = useSelector(state => state.auth.isAuthenticated)
-  const authReady = useSelector(state => state.app.authReady)
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
+  const authReady = useSelector((state) => state.app.authReady)
 
-  // Initialize auth on mount
   useEffect(() => {
     const initializeAuth = async () => {
       if (!isAuthenticated) {
@@ -41,9 +31,11 @@ export default function App() {
 
       try {
         const result = await api.users.getProfile()
-        dispatch(setUserProfile(result.data?.user))
+        const userData = result.data?.user ?? result.user ?? result.data ?? result
+        dispatch(setUserProfile(userData))
       } catch (error) {
         console.error('Failed to restore auth:', error)
+        dispatch(clearAuth())
         dispatch(clearUserProfile())
       } finally {
         dispatch(setAuthReady(true))
@@ -51,31 +43,31 @@ export default function App() {
     }
 
     initializeAuth()
-  }, [dispatch, isAuthenticated])
+  }, [dispatch]) // Only run once on mount
 
   if (!authReady) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
+    return <div className="flex items-center justify-center min-h-screen text-ink-500">Loading...</div>
   }
-
-  if (!isAuthenticated) {
-    return (
-      <>
-        <Auth />
-        <Toast />
-      </>
-    )
-  }
-
-  const Page = PAGE_MAP[currentPage] ?? Dashboard
 
   return (
-    <>
-      <AppShell>
-        <div key={currentPage} className="page-enter">
-          <Page />
-        </div>
-      </AppShell>
+    <BrowserRouter>
+      <Routes>
+        <Route path='/' element={<Auth />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Sidebar />}>
+            <Route path='/dashboard' element={<Dashboard />} />
+            <Route path='/transactions' element={<Transactions />} />
+            <Route path='/budgets' element={<Budgets />} />
+            <Route path='/insights' element={<Insights />} />
+            <Route path='/alerts' element={<Alerts />} />
+            <Route path='/wallet' element={<Wallet />} />
+            <Route path='/profile' element={<Profile />} />
+          </Route>
+        </Route>
+      </Routes>
       <Toast />
-    </>
+    </BrowserRouter>
   )
 }
+
+export default App

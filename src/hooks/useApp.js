@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { setCurrentPage, showToast, clearToast } from '../store/slices/appSlice.js'
-import { setUserProfile, clearUserProfile, updateUserProfile } from '../store/slices/userSlice.js'
+import { setCurrentPage, showToast, clearToast, setAuthReady } from '../store/slices/appSlice.js'
+import { setUserProfile, updateUserProfile as updateUserProfileAction, clearUserProfile } from '../store/slices/userSlice.js'
 import { clearAuth, setToken } from '../store/slices/authSlice.js'
 import { api } from '../utils/api.js'
 import SessionHelper from '../utils/SessionHelper.js'
@@ -40,17 +40,17 @@ export function useApp() {
     dispatch(setToken(token))
   }
 
-  const setUser = (updater) => {
-    if (typeof updater === 'function') {
-      const updated = updater(user)
-      dispatch(setUserProfile(updated))
-    } else {
-      dispatch(setUserProfile(updater))
-    }
+  const setUser = (profileData) => {
+    dispatch(setUserProfile(profileData))
   }
 
-  const setUserProfile = (profileData) => {
-    dispatch(updateUserProfile(profileData))
+  // Fixed: renamed local fn to avoid collision with the imported updateUserProfileAction
+  const updateUserProfile = (profileData) => {
+    dispatch(updateUserProfileAction(profileData))
+  }
+
+  const setAuthReadyState = (ready) => {
+    dispatch(setAuthReady(ready))
   }
 
   return {
@@ -59,11 +59,12 @@ export function useApp() {
     user,
     showToast: showToastMessage,
     logout,
-    updateUserProfile: setUserProfile,
+    updateUserProfile,
     setUser,
     setUserToken,
     isAuthenticated,
     authReady,
+    setAuthReady: setAuthReadyState,
     toast,
   }
 }
