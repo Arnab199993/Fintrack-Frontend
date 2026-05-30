@@ -95,64 +95,169 @@ export default function Transactions() {
     }
   }
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault()
+  //   if (!form.amount || isNaN(form.amount)) return showToast('Enter a valid amount', 'error')
+
+  //   setSaving(true)
+  //   try {
+  //     if (editTarget) {
+  //       const result = await api.transactions.update(editTarget._id, {
+  //         category: form.category,
+  //         description: form.description,
+  //         date: form.date,
+  //         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
+  //       })
+  //       const updated = result.data?.transaction ?? result.transaction
+  //       if (updated) {
+  //         setTxns(prev => prev.map(t => t._id === editTarget._id ? updated : t))
+  //       }
+  //       showToast('Transaction updated', 'success')
+  //     } else {
+  //       const body = {
+  //         type: form.type,
+  //         amount: parseFloat(form.amount),
+  //         category: form.category,
+  //         description: form.description,
+  //         date: form.date,
+  //         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
+  //       }
+
+  //       let result
+  //       if (receiptFile) {
+  //         const formData = new FormData()
+  //         Object.entries(body).forEach(([key, value]) => {
+  //           if (Array.isArray(value)) value.forEach(v => formData.append(key, v))
+  //           else formData.append(key, String(value))
+  //         })
+  //         formData.append('receipt', receiptFile)
+  //         result = await api.transactions.createWithReceipt(formData)
+  //       } else {
+  //         result = await api.transactions.create(body)
+  //       }
+
+  //       const created = result.data?.transaction ?? result.transaction
+  //       if (created) {
+  //         setTxns(prev => [created, ...prev])
+  //         setTotalCount(prev => prev + 1)
+  //       }
+  //       showToast('Transaction added', 'success')
+  //     }
+  //     setModalOpen(false)
+  //     setReceiptFile(null)
+  //     setPage(1)
+  //     await fetchTransactions(1)
+  //   } catch (error) {
+  //     showToast(error.message || 'Unable to save transaction', 'error')
+  //   } finally {
+  //     setSaving(false)
+  //   }
+  // }
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.amount || isNaN(form.amount)) return showToast('Enter a valid amount', 'error')
+  e.preventDefault()
 
-    setSaving(true)
-    try {
-      if (editTarget) {
-        const result = await api.transactions.update(editTarget._id, {
-          category: form.category,
-          description: form.description,
-          date: form.date,
-          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-        })
-        const updated = result.data?.transaction ?? result.transaction
-        if (updated) {
-          setTxns(prev => prev.map(t => t._id === editTarget._id ? updated : t))
-        }
-        showToast('Transaction updated', 'success')
-      } else {
-        const body = {
-          type: form.type,
-          amount: parseFloat(form.amount),
-          category: form.category,
-          description: form.description,
-          date: form.date,
-          tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-        }
+  const amount = Number(form.amount)
 
-        let result
-        if (receiptFile) {
-          const formData = new FormData()
-          Object.entries(body).forEach(([key, value]) => {
-            if (Array.isArray(value)) value.forEach(v => formData.append(key, v))
-            else formData.append(key, String(value))
-          })
-          formData.append('receipt', receiptFile)
-          result = await api.transactions.createWithReceipt(formData)
-        } else {
-          result = await api.transactions.create(body)
-        }
-
-        const created = result.data?.transaction ?? result.transaction
-        if (created) {
-          setTxns(prev => [created, ...prev])
-          setTotalCount(prev => prev + 1)
-        }
-        showToast('Transaction added', 'success')
-      }
-      setModalOpen(false)
-      setReceiptFile(null)
-      setPage(1)
-      await fetchTransactions(1)
-    } catch (error) {
-      showToast(error.message || 'Unable to save transaction', 'error')
-    } finally {
-      setSaving(false)
-    }
+  if (!amount || Number.isNaN(amount) || amount <= 0) {
+    return showToast('Enter a valid amount', 'error')
   }
+
+  const tags = form.tags
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(Boolean)
+
+  setSaving(true)
+
+  try {
+    if (editTarget) {
+      const payload = {
+        category: form.category,
+        description: form.description.trim(),
+        date: form.date,
+        tags,
+      }
+
+      const result = await api.transactions.update(
+        editTarget._id,
+        payload
+      )
+
+      const updated =
+        result.data?.transaction ?? result.transaction
+
+      if (updated) {
+        setTxns(prev =>
+          prev.map(txn =>
+            txn._id === editTarget._id ? updated : txn
+          )
+        )
+      }
+
+      showToast('Transaction updated', 'success')
+    } else {
+      const payload = {
+        type: form.type,
+        amount,
+        category: form.category,
+        description: form.description.trim(),
+        date: form.date,
+        tags,
+      }
+
+      let result
+
+      if (receiptFile) {
+        const formData = new FormData()
+
+        Object.entries(payload).forEach(([key, value]) => {
+          if (key === 'tags') {
+            formData.append('tags', JSON.stringify(value))
+          } else {
+            formData.append(key, String(value))
+          }
+        })
+
+        formData.append('receipt', receiptFile)
+
+        result = await api.transactions.createWithReceipt(
+          formData
+        )
+      } else {
+        result = await api.transactions.create(payload)
+      }
+
+      const created =
+        result.data?.transaction ?? result.transaction
+
+      if (created) {
+        setTxns(prev => [created, ...prev])
+        setTotalCount(prev => prev + 1)
+      }
+
+      showToast('Transaction added', 'success')
+    }
+
+    setModalOpen(false)
+    setReceiptFile(null)
+    setForm(EMPTY_FORM)
+    setPage(1)
+
+    await fetchTransactions(1)
+  } catch (error) {
+    console.error(error)
+
+    showToast(
+      error?.response?.data?.message ||
+      error?.message ||
+      'Unable to save transaction',
+      'error'
+    )
+  } finally {
+    setSaving(false)
+  }
+}
 
   return (
     <div className="space-y-6">
@@ -232,7 +337,7 @@ export default function Transactions() {
                     <td className="text-ink-500 text-sm">{fmtDate(t.date)}</td>
                     <td className="font-mono text-xs text-ink-500">{t.balanceAfter != null ? fmt(t.balanceAfter) : '—'}</td>
                     <td className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center gap-1">
                         {t.type === 'credit'
                           ? <ArrowUpRight size={13} className="text-neon-green" />
                           : <ArrowDownRight size={13} className="text-neon-red" />}
@@ -242,7 +347,7 @@ export default function Transactions() {
                       </div>
                     </td>
                     <td>
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center gap-1">
                         <button onClick={() => openEdit(t)} className="btn-ghost p-2 rounded-lg" title="Edit">
                           <Edit3 size={13} />
                         </button>

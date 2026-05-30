@@ -186,7 +186,7 @@ const Auth = () => {
                   </div>
                 </FormGroup>
                 <button type="submit" disabled={loading} className="btn-primary w-full mt-2 gap-2 justify-center py-3">
-                  {loading ? 'Sending OTP…' : <> Continue <ArrowRight size={15} /> </>}
+                  {loading ? 'Sending OTP…' : <div className='flex justify-center items-center'> Continue <ArrowRight size={15} /> </div>}
                 </button>
               </form>
               <p className="text-center text-sm text-ink-500 mt-6">
@@ -234,7 +234,7 @@ const Auth = () => {
                   <Input type="tel" placeholder="+1234567890" value={regForm.phone} onChange={e => setRegForm(f => ({ ...f, phone: e.target.value }))} />
                 </FormGroup>
                 <button type="submit" disabled={loading} className="btn-primary w-full mt-2 gap-2 justify-center py-3">
-                  {loading ? 'Creating account…' : <> Create Account <ArrowRight size={15} /> </>}
+                  {loading ? 'Creating account…' : <div className='flex justify-center items-center'> Create Account <ArrowRight size={15} /> </div>}
                 </button>
               </form>
               <p className="text-center text-sm text-ink-500 mt-6">

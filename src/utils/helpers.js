@@ -36,3 +36,8 @@ export const clamp = (val, min, max) => Math.min(Math.max(val, min), max)
 export const slugify = (s) => s?.toLowerCase().replace(/\s+/g, '-')
 
 export const todayISO = () => new Date().toISOString().slice(0, 10)
+
+export const monthLabel = (year, month) => {
+  const date = new Date(year, month - 1, 1)
+  return date.toLocaleString('default', { month: 'short' })
+}

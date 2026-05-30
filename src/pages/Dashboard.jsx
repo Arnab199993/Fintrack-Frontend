@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Wallet, TrendingUp, TrendingDown, PiggyBank,
@@ -9,16 +9,11 @@ import Badge from '../components/ui/Badge.jsx'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
-import { fmt, fmtCompact, fmtDate, catEmoji, catColor } from '../utils/helpers.js'
+import { fmt, fmtCompact, fmtDate, catEmoji, catColor, monthLabel } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 
-const monthLabel = (year, month) => {
-  const isMounted = useRef(false);
-  const date = new Date(year, month - 1, 1)
-  return date.toLocaleString('default', { month: 'short' })
-}
-
 export default function Dashboard() {
+  const isMounted = useRef(false);
   const navigate = useNavigate()
   const { user } = useApp()
   const [summary, setSummary] = useState(null)

@@ -82,12 +82,12 @@ class BaseApi {
     }
   }
 
-  static async BasePostRequestFileInternalAsync(endpoint, file) {
+  static async BasePostRequestFileInternalAsync(endpoint, formData) {
     const finalApiUrl = this.BaseUrl + "/" + endpoint.replace(/^\/+/, "");
     const apiAuthorization = SessionHelper.GetCustomer();
 
-    const formData = new FormData();
-    formData.append("file", file);
+    // const formData = new FormData();
+    // formData.append("file", file);
 
     const config = {
       headers: {

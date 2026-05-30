@@ -108,7 +108,7 @@ export default function Insights() {
         }
       />
 
-      <div className="relative overflow-hidden rounded-2xl border border-neon-purple/20 bg-gradient-to-br from-obsidian-800 to-obsidian-900 p-6 animate-slide-up fill-both">
+      <div className="relative overflow-hidden rounded-2xl border border-neon-purple/20 bg-linear-to-br from-obsidian-800 to-obsidian-900 p-6 animate-slide-up fill-both">
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-neon-purple/5 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-neon-blue/5 blur-2xl pointer-events-none" />
         <div className="relative">
@@ -132,7 +132,7 @@ export default function Insights() {
           </div>
           <div className="w-full bg-obsidian-700 rounded-full h-1.5 mb-1">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-neon-green to-neon-blue transition-all duration-700"
+              className="h-full rounded-full bg-linear-to-r from-neon-green to-neon-blue transition-all duration-700"
               style={{ width: `${Math.min(savingsRate, 100)}%` }}
             />
           </div>
@@ -230,13 +230,13 @@ export default function Insights() {
                 return (
                   <tr key={m.label} className="animate-slide-up fill-both" style={{ animationDelay: `${300 + i * 40}ms` }}>
                     <td className="font-semibold text-ink-900">{m.label}</td>
-                    <td className="text-right font-mono text-neon-green text-sm">+{fmt(m.income ?? 0)}</td>
-                    <td className="text-right font-mono text-neon-red text-sm">-{fmt(m.expenses ?? 0)}</td>
-                    <td className="text-right font-mono font-semibold text-sm text-ink-900">{fmt(saved)}</td>
-                    <td className="text-right">
+                    <td className="font-mono text-neon-green text-sm">+{fmt(m.income ?? 0)}</td>
+                    <td className="font-mono text-neon-red text-sm">-{fmt(m.expenses ?? 0)}</td>
+                    <td className="font-mono font-semibold text-sm text-ink-900">{fmt(saved)}</td>
+                    <td>
                       <Badge variant={parseFloat(rate) >= 20 ? 'green' : 'yellow'}>{rate}%</Badge>
                     </td>
-                    <td className="text-center">
+                    <td>
                       {expDiff === null ? (
                         <span className="text-xs text-ink-500">—</span>
                       ) : (
