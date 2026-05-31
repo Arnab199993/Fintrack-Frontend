@@ -232,7 +232,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="card p-6 animate-slide-up fill-both delay-300">
+      {/* <div className="card p-6 animate-slide-up fill-both delay-300">
         <h2 className="font-display font-semibold text-base text-ink-900 mb-6">6-Month Trend</h2>
         <div className="flex items-end gap-3 h-32">
           {monthlyTrend.map((m, i) => {
@@ -275,7 +275,7 @@ export default function Dashboard() {
             <div className="w-3 h-3 rounded-sm bg-neon-red/40" /> Expenses
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }
