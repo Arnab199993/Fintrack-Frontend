@@ -8,7 +8,7 @@ import { api } from '../utils/api.js'
 import { fmt, fmtCompact, fmtDate } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD']
 
@@ -18,24 +18,19 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const extractWalletBalance = (wallet) => {
-  if (!wallet) return 0
-  return toNumber(wallet.balance ?? wallet.amount ?? wallet.walletBalance ?? wallet.balanceAmount ?? wallet.total ?? wallet.value)
-}
 
 export default function Wallet() {
-  const isMounted = useRef(false);
+  const hasFetched = useRef(false);
   const { user, setUser, updateUserProfile, showToast } = useApp()
   const [topUpOpen, setTopUpOpen]   = useState(false)
   const [topUpAmount, setTopUpAmount] = useState('')
   const [currency, setCurrency]     = useState(user?.currency ?? 'USD')
-  const [transactions, setTransactions] = useState([])
+  const [transactions, setTransactions] = useState([])   // recent 20 for history display
+  const [summaryTotals, setSummaryTotals] = useState({ totalIn: 0, totalOut: 0, startingBalance: 0 })
   const [walletLoading, setWalletLoading] = useState(false)
 
-  const credits  = transactions.filter(t => t.type === 'credit')
-  const debits   = transactions.filter(t => t.type === 'debit')
-  const totalIn  = credits.reduce((s, t) => s + t.amount, 0)
-  const totalOut = debits.reduce((s, t) => s + t.amount, 0)
+  // Use summaryTotals for accurate Money In/Out (not limited to 20 transactions)
+  const { totalIn, totalOut, startingBalance } = summaryTotals
 
   const walletBalance = toNumber(user?.walletBalance)
   const topUpValue = toNumber(topUpAmount)
@@ -44,18 +39,38 @@ export default function Wallet() {
     if (!user) return
     setWalletLoading(true)
     try {
-      const [walletResult, txnResult] = await Promise.all([
+      const [walletResult, txnResult, dashResult] = await Promise.all([
         api.users.getWallet(),
         api.transactions.list({ limit: 20, page: 1 }),
+        api.transactions.analytics.dashboard(),
       ])
-      const txns = txnResult.data?.transactions ?? txnResult.transactions ?? []
-      const walletPayload = walletResult.data?.wallet ?? walletResult.wallet ?? walletResult.data ?? walletResult
-      const balance = extractWalletBalance(walletPayload)
-      if (walletPayload) {
-        // Use updateUserProfile (merges) instead of setUser with functional update
+
+      // Fix: backend returns { data: { transactions: [...] } }
+      const txns = txnResult?.data?.transactions ?? txnResult?.transactions ?? []
+      setTransactions(txns)
+
+      // Fix: backend getWallet returns { data: { wallet: { balance, currency } } }
+      const walletPayload = walletResult?.data?.wallet ?? walletResult?.data ?? walletResult
+      const balance = toNumber(walletPayload?.balance ?? walletPayload?.walletBalance ?? 0)
+      if (balance > 0 || walletPayload) {
         updateUserProfile({ walletBalance: balance })
       }
-      setTransactions(txns)
+
+      // Fix: use all-time dashboard analytics for accurate Money In/Out totals
+      // Backend getDashboardSummary returns { allTime: { credit: { total }, debit: { total } } }
+      const dash = dashResult?.data ?? dashResult
+      const allTimeIn  = toNumber(dash?.allTime?.credit?.total ?? dash?.allTime?.credit ?? 0)
+      const allTimeOut = toNumber(dash?.allTime?.debit?.total  ?? dash?.allTime?.debit  ?? 0)
+
+      // Starting balance = current balance - net of all transactions
+      const netTxn = allTimeIn - allTimeOut
+      const calculatedStart = Math.max(0, toNumber(balance) - netTxn)
+
+      setSummaryTotals({
+        totalIn:  allTimeIn,
+        totalOut: allTimeOut,
+        startingBalance: Math.round(calculatedStart * 100) / 100,
+      })
     } catch (error) {
       showToast(error.message || 'Unable to load wallet data', 'error')
     } finally {
@@ -64,9 +79,9 @@ export default function Wallet() {
   }
 
   useEffect(() => {
-    if (isMounted.current) return;
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadWallet()
-    isMounted.current = true;
   }, [])
 
   useEffect(() => {
@@ -78,29 +93,28 @@ const handleTopUp = async (e) => {
   const amount = parseFloat(topUpAmount)
   if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
 
-  // Optimistic update so UI reflects the change instantly
-  const optimisticBalance = walletBalance + amount
-  updateUserProfile({ walletBalance: optimisticBalance })
+  const prevBalance = walletBalance
+  // Optimistic update
+  updateUserProfile({ walletBalance: prevBalance + amount })
 
   try {
     const result = await api.users.topUpWallet({ amount })
-    const walletPayload = result.data?.wallet ?? result.wallet ?? result.data ?? result
-    const confirmedBalance = extractWalletBalance(walletPayload)
+    // Fix: backend topUp returns { data: { newBalance, currency } } not wallet object
+    const newBalance = toNumber(
+      result?.data?.newBalance ?? result?.newBalance ??
+      result?.data?.wallet?.balance ?? result?.data?.balance ??
+      (prevBalance + amount)
+    )
+    updateUserProfile({ walletBalance: newBalance })
 
-    // Use confirmed balance from server if available, otherwise keep optimistic
-    if (confirmedBalance > 0) {
-      updateUserProfile({ walletBalance: confirmedBalance })
-    }
-
-    showToast(`$${amount.toFixed(2)} added to wallet`, 'success')
+    showToast(`₹${amount.toFixed(2)} added to wallet`, 'success')
     setTopUpOpen(false)
     setTopUpAmount('')
-
-    // Re-sync wallet in background to get accurate server state
+    // Re-sync to get accurate totals
     loadWallet()
   } catch (error) {
     // Revert optimistic update on failure
-    updateUserProfile({ walletBalance: walletBalance })
+    updateUserProfile({ walletBalance: prevBalance })
     showToast(error.message || 'Unable to top up wallet', 'error')
   }
 }
@@ -120,7 +134,7 @@ const handleTopUp = async (e) => {
   const quickAmounts = [500, 1000, 5000, 10000]
 
   return (
-    <div ref={isMounted} className="space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Wallet"
         subtitle="Your virtual finance account"
@@ -160,7 +174,7 @@ const handleTopUp = async (e) => {
                 <span className="text-xs text-ink-500">Money In</span>
               </div>
               <p className="font-display font-bold text-xl text-neon-green">{fmtCompact(totalIn)}</p>
-              <p className="text-xs text-ink-500 mt-0.5">{credits.length} credit transactions</p>
+              <p className="text-xs text-ink-500 mt-0.5">{transactions.filter(t => t.type === 'credit').length} credit transactions</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -168,7 +182,7 @@ const handleTopUp = async (e) => {
                 <span className="text-xs text-ink-500">Money Out</span>
               </div>
               <p className="font-display font-bold text-xl text-neon-red">{fmtCompact(totalOut)}</p>
-              <p className="text-xs text-ink-500 mt-0.5">{debits.length} debit transactions</p>
+              <p className="text-xs text-ink-500 mt-0.5">{transactions.filter(t => t.type === 'debit').length} debit transactions</p>
             </div>
           </div>
         </div>
@@ -212,7 +226,7 @@ const handleTopUp = async (e) => {
             <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">Account Summary</h2>
             <div className="space-y-3">
               {[
-                { label: 'Starting Balance', value: fmt(0),                    color: 'text-ink-700' },
+                { label: 'Starting Balance', value: fmt(startingBalance),          color: 'text-ink-700' },
                 { label: 'Total Credits',    value: `+${fmt(totalIn)}`,        color: 'text-neon-green' },
                 { label: 'Total Debits',     value: `-${fmt(totalOut)}`,       color: 'text-neon-red' },
                 { label: 'Net Change',       value: fmt(totalIn - totalOut),   color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },

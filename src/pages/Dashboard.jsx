@@ -214,7 +214,7 @@ export default function Dashboard() {
           <div className="card p-5 border-neon-purple/20 animate-slide-up fill-both delay-400">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={14} className="text-neon-purple" />
-              <h2 className="font-display font-semibold text-sm text-ink-900">AI Insight</h2>
+              <h2 className="font-display font-semibold text-sm text-ink-900">Insight</h2>
             </div>
             <p className="text-sm text-ink-700 leading-relaxed">
               {insight?.insights?.[0] ?? 'Generate insights to surface your top spending patterns.'}

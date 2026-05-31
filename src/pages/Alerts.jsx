@@ -42,8 +42,12 @@ export default function Alerts() {
           api.alerts.list(),
           api.alerts.getSettings(),
         ])
-        setAlerts(alertsResult.data?.alerts ?? alertsResult.data ?? [])
-        setSettings(settingsResult.data?.settings ?? settingsResult.data ?? DEFAULT_SETTINGS)
+        // Backend: { data: { alerts: [...], unreadCount: N, meta: {...} } }
+        const alertsData = alertsResult?.data?.alerts ?? alertsResult?.data ?? []
+        setAlerts(Array.isArray(alertsData) ? alertsData : [])
+        // Backend: { data: { settings: {...} } }
+        const settingsData = settingsResult?.data?.settings ?? settingsResult?.data ?? DEFAULT_SETTINGS
+        setSettings(settingsData)
       } catch (error) {
         showToast(error.message || 'Unable to load alerts', 'error')
       } finally {

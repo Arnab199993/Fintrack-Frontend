@@ -6,7 +6,7 @@ import { api } from '../../utils/api.js'
 
 const FEATURES = [
   { icon: BarChart3, text: 'Category-wise spending charts'     },
-  { icon: Zap,       text: 'AI-powered financial insights'     },
+  { icon: Zap,       text: 'financial insights'     },
   { icon: Shield,    text: '2-step email OTP verification'     },
   { icon: TrendingUp,text: 'Smart budget alerts & tracking'    },
 ]
@@ -132,7 +132,7 @@ const Auth = () => {
           <span className="text-neon-green">fully visible.</span>
         </h1>
         <p className="text-ink-500 text-base leading-relaxed mb-10 max-w-sm">
-          Track spending, manage budgets, and get AI-powered insights — all in one clean dashboard.
+          Track spending, manage budgets, and financial insights — all in one clean dashboard.
         </p>
 
         <div className="space-y-4">

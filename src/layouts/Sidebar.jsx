@@ -9,7 +9,7 @@ const NAV = [
   { id: 'dashboard',    path: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
   { id: 'transactions', path: '/transactions', icon: ArrowLeftRight,  label: 'Transactions' },
   { id: 'budgets',      path: '/budgets',      icon: Target,          label: 'Budgets'      },
-  { id: 'insights',     path: '/insights',     icon: Sparkles,        label: 'AI Insights'  },
+  { id: 'insights',     path: '/insights',     icon: Sparkles,        label: 'Insights'  },
   { id: 'alerts',       path: '/alerts',       icon: Bell,            label: 'Alerts'       },
   { id: 'wallet',       path: '/wallet',       icon: Wallet,          label: 'Wallet'       },
   { id: 'profile',      path: '/profile',      icon: User,            label: 'Profile'      },

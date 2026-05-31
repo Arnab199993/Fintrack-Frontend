@@ -28,7 +28,9 @@ export default function Insights() {
         api.transactions.analytics.trend({ months: 6 }),
       ])
 
-      setInsight(insightResult.data ?? insightResult)
+      const insightData =
+        insightResult?.data?.insight ?? insightResult?.data ?? insightResult;
+      setInsight(insightData);
       setTrend(trendResult.data ?? trendResult ?? [])
     } catch (error) {
       if (error?.status === 404) {
@@ -50,7 +52,9 @@ export default function Insights() {
     setGenerating(true)
     try {
       const result = await api.insights.generate({ period })
-      setInsight(result.data ?? result)
+      const insightData =
+        result?.data?.insight ?? result?.data ?? result;
+      setInsight(insightData);
       showToast(`Insights refreshed for ${period}`, 'success')
     } catch (error) {
       showToast(error.message || 'Unable to generate insights', 'error')
@@ -59,7 +63,12 @@ export default function Insights() {
     }
   }
 
-  const catEntries = Object.entries(insight?.categoryBreakdown ?? {}).sort((a, b) => b[1] - a[1])
+  const rawBreakdown = insight?.categoryBreakdown ?? {}
+const catEntries = (
+  rawBreakdown instanceof Map
+    ? Array.from(rawBreakdown.entries())
+    : Object.entries(rawBreakdown)
+).filter(([, v]) => typeof v === 'number').sort((a, b) => b[1] - a[1])
   const catMax = catEntries[0]?.[1] || 1
   const savingsRate = insight?.savingsRate ?? 0
   const totalIncome = insight?.totalIncome ?? 0
@@ -87,7 +96,7 @@ export default function Insights() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="AI Insights"
+        title="Insights"
         subtitle="Intelligent analysis of your spending patterns"
         action={
           <div className="flex items-center gap-3">
@@ -116,7 +125,7 @@ export default function Insights() {
             <div className="w-8 h-8 rounded-xl bg-neon-purple/20 border border-neon-purple/20 flex items-center justify-center">
               <Sparkles size={15} className="text-neon-purple" />
             </div>
-            <span className="section-label text-neon-purple/70">AI Analysis · {period}</span>
+            <span className="section-label text-neon-purple/70">Fintrack Analysis · {period}</span>
           </div>
           <div className="grid grid-cols-3 gap-6 mb-6">
             {[

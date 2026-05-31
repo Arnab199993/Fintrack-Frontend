@@ -79,7 +79,7 @@ export default function Profile() {
       {/* Avatar + name hero */}
       <div className="card p-6 flex items-center gap-6 animate-slide-up fill-both">
         <div className="relative group">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-2xl font-display font-bold text-white overflow-hidden">
+          <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-neon-purple to-neon-blue flex items-center justify-center text-2xl font-display font-bold text-white overflow-hidden">
             {user.avatar?.url
               ? <img src={user.avatar.url} className="w-full h-full object-cover" alt="" />
               : initials

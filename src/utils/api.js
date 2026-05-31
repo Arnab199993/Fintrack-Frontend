@@ -14,12 +14,12 @@ export const authApi = {
 
 // User API
 export const usersApi = {
-  getProfile: () => BaseApi.BaseGetRequestAsync("users/me"),
-  updateProfile: (data) => BaseApi.BasePatchRequestAsync("users/me", data),
-  changePassword: (data) => BaseApi.BasePostRequestAsync("users/me/password", data),
-  updateAvatar: (file) => BaseApi.BasePostRequestFileAsync("users/me/avatar", file),
-  getWallet: () => BaseApi.BaseGetRequestAsync("users/me/wallet"),
-  topUpWallet: (data) => BaseApi.BasePostRequestAsync("users/me/wallet/topup", data),
+  getProfile: () => BaseApi.BaseGetRequestAsync("users/user"),
+  updateProfile: (data) => BaseApi.BasePatchRequestAsync("users/user", data),
+  changePassword: (data) => BaseApi.BasePostRequestAsync("users/user/password", data),
+  updateAvatar: (file) => BaseApi.BasePostRequestFileAsync("users/user/avatar", file),
+  getWallet: () => BaseApi.BaseGetRequestAsync("users/user/wallet"),
+  topUpWallet: (data) => BaseApi.BasePostRequestAsync("users/user/wallet/topup", data),
 };
 
 // Transactions API
@@ -55,8 +55,9 @@ export const budgetsApi = {
 // Alert API
 export const alertsApi = {
   list: () => BaseApi.BaseGetRequestAsync("alerts"),
-  getSettings: () => BaseApi.BaseGetRequestAsync("alert-settings"),
-  updateSettings: (data) => BaseApi.BasePatchRequestAsync("alert-settings", data),
+  getSettings: () => BaseApi.BaseGetRequestAsync("alerts/settings"),
+  updateSettings: (data) =>
+    BaseApi.BasePatchRequestAsync("alerts/settings", data),
   markAllRead: () => BaseApi.BasePatchRequestAsync("alerts/read-all", {}),
   markRead: (id) => BaseApi.BasePatchRequestAsync(`alerts/${id}/read`, {}),
 };
