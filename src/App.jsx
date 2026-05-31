@@ -22,29 +22,6 @@ const App = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
   const authReady = useSelector((state) => state.app.authReady)
 
-  // useEffect(() => {
-  //   const initializeAuth = async () => {
-  //     if (!isAuthenticated) {
-  //       dispatch(setAuthReady(true))
-  //       return
-  //     }
-
-  //     try {
-  //       const result = await api.users.getProfile()
-  //       const userData = result.data?.user ?? result.user ?? result.data ?? result
-  //       dispatch(setUserProfile(userData))
-  //     } catch (error) {
-  //       console.error('Failed to restore auth:', error)
-  //       dispatch(clearAuth())
-  //       dispatch(clearUserProfile())
-  //     } finally {
-  //       dispatch(setAuthReady(true))
-  //     }
-  //   }
-
-  //   initializeAuth()
-  // }, [dispatch]) // Only run once on mount
-
   useEffect(() => {
   const init = async () => {
     if (!isAuthenticated) {
