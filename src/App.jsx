@@ -9,7 +9,7 @@ import Wallet from './pages/Wallet'
 import Toast from './components/ui/Toast.jsx'
 import { api } from './utils/api.js'
 import { setAuthReady } from './store/slices/appSlice.js'
-import { setUserProfile, clearUserProfile } from './store/slices/userSlice.js'
+import { setUserProfile, clearUserProfile, initializeAuth } from './store/slices/userSlice.js'
 import { clearAuth } from './store/slices/authSlice.js'
 import Transactions from './pages/Transactions.jsx'
 import Budgets from './pages/Budgets.jsx'
@@ -22,28 +22,46 @@ const App = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
   const authReady = useSelector((state) => state.app.authReady)
 
+  // useEffect(() => {
+  //   const initializeAuth = async () => {
+  //     if (!isAuthenticated) {
+  //       dispatch(setAuthReady(true))
+  //       return
+  //     }
+
+  //     try {
+  //       const result = await api.users.getProfile()
+  //       const userData = result.data?.user ?? result.user ?? result.data ?? result
+  //       dispatch(setUserProfile(userData))
+  //     } catch (error) {
+  //       console.error('Failed to restore auth:', error)
+  //       dispatch(clearAuth())
+  //       dispatch(clearUserProfile())
+  //     } finally {
+  //       dispatch(setAuthReady(true))
+  //     }
+  //   }
+
+  //   initializeAuth()
+  // }, [dispatch]) // Only run once on mount
+
   useEffect(() => {
-    const initializeAuth = async () => {
-      if (!isAuthenticated) {
-        dispatch(setAuthReady(true))
-        return
-      }
-
-      try {
-        const result = await api.users.getProfile()
-        const userData = result.data?.user ?? result.user ?? result.data ?? result
-        dispatch(setUserProfile(userData))
-      } catch (error) {
-        console.error('Failed to restore auth:', error)
-        dispatch(clearAuth())
-        dispatch(clearUserProfile())
-      } finally {
-        dispatch(setAuthReady(true))
-      }
+  const init = async () => {
+    if (!isAuthenticated) {
+      dispatch(setAuthReady(true))
+      return
     }
-
-    initializeAuth()
-  }, [dispatch]) // Only run once on mount
+    try {
+      await dispatch(initializeAuth()).unwrap()
+    } catch {
+      dispatch(clearAuth())
+      dispatch(clearUserProfile())
+    } finally {
+      dispatch(setAuthReady(true))
+    }
+  }
+  init()
+}, [dispatch])
 
   if (!authReady) {
     return <div className="flex items-center justify-center min-h-screen text-ink-500">Loading...</div>

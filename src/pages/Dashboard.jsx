@@ -4,6 +4,7 @@ import {
   Wallet, TrendingUp, TrendingDown, PiggyBank,
   ArrowUpRight, ArrowDownRight, ShoppingBag, Zap
 } from 'lucide-react'
+import ReactApexChart from 'react-apexcharts'
 import StatCard from '../components/ui/StatCard.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import PageHeader from '../components/ui/PageHeader.jsx'
@@ -77,10 +78,92 @@ export default function Dashboard() {
     return acc
   }, [])
 
+  console.log("categoriesss",categories)
+
+  const options = {
+    chart: {
+      type: "bar",
+      toolbar: { show: false },
+      fontFamily: "inherit",
+      stacked:true
+    },
+
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: "4%",
+        borderRadius: 0,
+        stacked:true
+      },
+    },
+
+    dataLabels: {
+      enabled: false,
+    },
+
+    stroke: {
+      show: true,
+      width: 1,
+      colors: ["transparent"],
+    },
+
+    xaxis: {
+      categories:monthlyTrend.map((item)=>item.label),
+      labels: {
+        style: {
+          colors: "#9CA3AF",
+          fontSize: "10px",
+        },
+      },
+    },
+
+    yaxis: {
+      labels: {
+        style: {
+          colors: "#9CA3AF",
+          fontSize: "10px",
+        },
+      },
+    },
+
+    colors: ["#22c55e", "#ef4444"], 
+
+    legend: {
+      position: "bottom",
+      labels: {
+        colors: "#9CA3AF",
+      },
+    },
+
+    grid: {
+      borderColor: "#1f2937",
+    },
+
+    tooltip: {
+      theme: "dark",
+      y: {
+        formatter: (val) => `${val}`,
+      },
+    },
+  };
+  const series = [
+    {
+      name: "Income",
+      data: monthlyTrend.map((m) => m.credit ?? 0),
+    },
+    {
+      name: "Expenses",
+      data: monthlyTrend.map((m) => m.expenses ?? 0),
+    },
+  ];
+
+  console.log("monthlyTrendddd",monthlyTrend)
+
+
   return (
     <div className="space-y-8">
       <PageHeader
-        title={user ? `Good morning, ${user.firstName} 👋` : 'Good morning 👋'}
+        title={user ? `Good morning, ${user.firstName} 👋` : "Good morning 👋"}
         subtitle="Here's your financial snapshot"
       />
 
@@ -89,23 +172,25 @@ export default function Dashboard() {
         <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-neon-green/5 blur-xl pointer-events-none" />
         <div className="relative flex items-end justify-between flex-wrap gap-4">
           <div>
-            <p className="section-label text-neon-blue/70 mb-2">Total Wallet Balance</p>
+            <p className="section-label text-neon-blue/70 mb-2">
+              Total Wallet Balance
+            </p>
             <p className="font-display font-bold text-5xl tracking-tight text-white">
               {fmtCompact(user?.walletBalance ?? 0)}
               <span className="text-xl font-normal text-ink-500 ml-2">
-                {user?.currency ?? 'USD'}
+                {user?.currency ?? "USD"}
               </span>
             </p>
             <p className="text-sm text-ink-500 mt-2">Updated just now</p>
           </div>
           <div className="flex gap-3">
             <div>
-              <PrimaryBtn handleClick={() => navigate('/wallet')}>
-              <Wallet size={15} /> Top Up
-            </PrimaryBtn>
+              <PrimaryBtn handleClick={() => navigate("/wallet")}>
+                <Wallet size={15} /> Top Up
+              </PrimaryBtn>
             </div>
             <button
-              onClick={() => navigate('/transactions')}
+              onClick={() => navigate("/transactions")}
               className="btn-secondary px-5 py-2.5 text-sm"
             >
               View All
@@ -141,8 +226,8 @@ export default function Dashboard() {
         />
         <StatCard
           label="Top Category"
-          value={catSorted[0]?.category ?? '—'}
-          sub={catSorted[0] ? fmt(catSorted[0].total) : ''}
+          value={catSorted[0]?.category ?? "—"}
+          sub={catSorted[0] ? fmt(catSorted[0].total) : ""}
           icon={ShoppingBag}
           accent="purple"
           delay={240}
@@ -152,14 +237,21 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 card overflow-hidden animate-slide-up fill-both delay-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-obsidian-700">
-            <h2 className="font-display font-semibold text-base text-ink-900">Recent Transactions</h2>
-            <button onClick={() => navigate('/transactions')} className="btn-ghost text-xs gap-1 flex justify-between items-center cursor-pointer">
+            <h2 className="font-display font-semibold text-base text-ink-900">
+              Recent Transactions
+            </h2>
+            <button
+              onClick={() => navigate("/transactions")}
+              className="btn-ghost text-xs gap-1 flex justify-between items-center cursor-pointer"
+            >
               View all <ArrowUpRight size={13} />
             </button>
           </div>
           <div className="divide-y divide-obsidian-700">
             {recent.length === 0 && !loading && (
-              <p className="text-sm text-ink-500 text-center py-8">No recent transactions</p>
+              <p className="text-sm text-ink-500 text-center py-8">
+                No recent transactions
+              </p>
             )}
             {recent.map((t, i) => (
               <div
@@ -167,19 +259,30 @@ export default function Dashboard() {
                 className="flex items-center gap-4 px-5 py-3.5 hover:bg-obsidian-700/40 transition-colors animate-slide-up fill-both"
                 style={{ animationDelay: `${200 + i * 50}ms` }}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${t.type === 'credit' ? 'bg-neon-green/10' : 'bg-neon-red/10'}`}>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${t.type === "credit" ? "bg-neon-green/10" : "bg-neon-red/10"}`}
+                >
                   {catEmoji(t.category)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink-900 truncate">{t.description}</p>
+                  <p className="text-sm font-medium text-ink-900 truncate">
+                    {t.description}
+                  </p>
                   <p className="text-xs text-ink-500">{fmtDate(t.date)}</p>
                 </div>
-                <Badge variant={t.type === 'credit' ? 'green' : 'red'}>
-                  {t.type === 'credit' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                <Badge variant={t.type === "credit" ? "green" : "red"}>
+                  {t.type === "credit" ? (
+                    <ArrowUpRight size={10} />
+                  ) : (
+                    <ArrowDownRight size={10} />
+                  )}
                   {t.category}
                 </Badge>
-                <p className={`font-mono font-semibold text-sm tabular-nums shrink-0 ${t.type === 'credit' ? 'text-neon-green' : 'text-neon-red'}`}>
-                  {t.type === 'credit' ? '+' : '-'}{fmt(t.amount)}
+                <p
+                  className={`font-mono font-semibold text-sm tabular-nums shrink-0 ${t.type === "credit" ? "text-neon-green" : "text-neon-red"}`}
+                >
+                  {t.type === "credit" ? "+" : "-"}
+                  {fmt(t.amount)}
                 </p>
               </div>
             ))}
@@ -188,7 +291,9 @@ export default function Dashboard() {
 
         <div className="flex flex-col gap-6">
           <div className="card p-5 animate-slide-up fill-both delay-300">
-            <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">Spending Breakdown</h2>
+            <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">
+              Spending Breakdown
+            </h2>
             <div className="space-y-3">
               {catSorted.map((category) => (
                 <div key={category.category}>
@@ -203,7 +308,10 @@ export default function Dashboard() {
                   <div className="progress-track">
                     <div
                       className="progress-fill"
-                      style={{ width: `${(category.total / catMax) * 100}%`, background: catColor(category.category) }}
+                      style={{
+                        width: `${(category.total / catMax) * 100}%`,
+                        background: catColor(category.category),
+                      }}
                     />
                   </div>
                 </div>
@@ -214,27 +322,37 @@ export default function Dashboard() {
           <div className="card p-5 border-neon-purple/20 animate-slide-up fill-both delay-400">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={14} className="text-neon-purple" />
-              <h2 className="font-display font-semibold text-sm text-ink-900">Insight</h2>
+              <h2 className="font-display font-semibold text-sm text-ink-900">
+                Insight
+              </h2>
             </div>
             <p className="text-sm text-ink-700 leading-relaxed">
-              {insight?.insights?.[0] ?? 'Generate insights to surface your top spending patterns.'}
+              {insight?.insights?.[0] ??
+                "Generate insights to surface your top spending patterns."}
             </p>
             <button
-              onClick={() => navigate('/insights')}
+              onClick={() => navigate("/insights")}
               className="btn-ghost text-xs mt-3 text-neon-purple hover:text-neon-purple/80 px-0 gap-1"
             >
-              <div className='cursor-pointer flex items-center gap-1'>
+              <div className="cursor-pointer flex items-center gap-1">
                 View all insights <ArrowUpRight size={12} />
               </div>
-              
             </button>
           </div>
         </div>
       </div>
 
-      {/* <div className="card p-6 animate-slide-up fill-both delay-300">
-        <h2 className="font-display font-semibold text-base text-ink-900 mb-6">6-Month Trend</h2>
-        <div className="flex items-end gap-3 h-32">
+      <div className="card p-6 animate-slide-up fill-both delay-300">
+        <h2 className="font-display font-semibold text-base text-ink-900 mb-6">
+          6-Month Trend
+        </h2>
+        <ReactApexChart
+          series={series}
+          type="bar"
+          options={options}
+          height={350}
+        />
+        {/* <div className="flex items-end gap-3 h-32">
           {monthlyTrend.map((m, i) => {
             const maxVal = Math.max(
               ...monthlyTrend.flatMap(x => [x.income ?? 0, x.expenses ?? 0]),
@@ -274,8 +392,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 text-xs text-ink-500">
             <div className="w-3 h-3 rounded-sm bg-neon-red/40" /> Expenses
           </div>
-        </div>
-      </div> */}
+        </div> */}
+      </div>
     </div>
-  )
+  );
 }
