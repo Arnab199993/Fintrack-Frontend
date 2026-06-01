@@ -49,9 +49,12 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => {
-    loadDashboard()
-  }, [])
+useEffect(() => {
+  if (isMounted.current) true;
+  setLoading(false)
+  loadDashboard()
+ isMounted.current = true
+}, [])
 
   const income   = summary?.thisMonth?.credit?.total ?? 0
   const expenses = summary?.thisMonth?.debit?.total ?? 0
