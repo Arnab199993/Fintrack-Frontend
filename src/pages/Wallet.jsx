@@ -5,7 +5,7 @@ import Modal from '../components/ui/Modal.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
-import { fmt, fmtCompact, fmtDate } from '../utils/helpers.js'
+import { fmt, fmtCompact, fmtDate , getCurrencySymbol } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 import { useEffect, useRef, useState } from 'react'
@@ -25,11 +25,10 @@ export default function Wallet() {
   const [topUpOpen, setTopUpOpen]   = useState(false)
   const [topUpAmount, setTopUpAmount] = useState('')
   const [currency, setCurrency]     = useState(user?.currency ?? 'USD')
-  const [transactions, setTransactions] = useState([])   // recent 20 for history display
+  const [transactions, setTransactions] = useState([])
   const [summaryTotals, setSummaryTotals] = useState({ totalIn: 0, totalOut: 0, startingBalance: 0 })
   const [walletLoading, setWalletLoading] = useState(false)
 
-  // Use summaryTotals for accurate Money In/Out (not limited to 20 transactions)
   const { totalIn, totalOut, startingBalance } = summaryTotals
 
   const walletBalance = toNumber(user?.walletBalance)
@@ -45,24 +44,19 @@ export default function Wallet() {
         api.transactions.analytics.dashboard(),
       ])
 
-      // Fix: backend returns { data: { transactions: [...] } }
       const txns = txnResult?.data?.transactions ?? txnResult?.transactions ?? []
       setTransactions(txns)
 
-      // Fix: backend getWallet returns { data: { wallet: { balance, currency } } }
       const walletPayload = walletResult?.data?.wallet ?? walletResult?.data ?? walletResult
       const balance = toNumber(walletPayload?.balance ?? walletPayload?.walletBalance ?? 0)
       if (balance > 0 || walletPayload) {
         updateUserProfile({ walletBalance: balance })
       }
-
-      // Fix: use all-time dashboard analytics for accurate Money In/Out totals
-      // Backend getDashboardSummary returns { allTime: { credit: { total }, debit: { total } } }
+      
       const dash = dashResult?.data ?? dashResult
       const allTimeIn  = toNumber(dash?.allTime?.credit?.total ?? dash?.allTime?.credit ?? 0)
       const allTimeOut = toNumber(dash?.allTime?.debit?.total  ?? dash?.allTime?.debit  ?? 0)
 
-      // Starting balance = current balance - net of all transactions
       const netTxn = allTimeIn - allTimeOut
       const calculatedStart = Math.max(0, toNumber(balance) - netTxn)
 
@@ -77,6 +71,7 @@ export default function Wallet() {
       setWalletLoading(false)
     }
   }
+  
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -94,12 +89,10 @@ const handleTopUp = async (e) => {
   if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error')
 
   const prevBalance = walletBalance
-  // Optimistic update
   updateUserProfile({ walletBalance: prevBalance + amount })
 
   try {
     const result = await api.users.topUpWallet({ amount })
-    // Fix: backend topUp returns { data: { newBalance, currency } } not wallet object
     const newBalance = toNumber(
       result?.data?.newBalance ?? result?.newBalance ??
       result?.data?.wallet?.balance ?? result?.data?.balance ??
@@ -110,10 +103,8 @@ const handleTopUp = async (e) => {
     showToast(`₹${amount.toFixed(2)} added to wallet`, 'success')
     setTopUpOpen(false)
     setTopUpAmount('')
-    // Re-sync to get accurate totals
     loadWallet()
   } catch (error) {
-    // Revert optimistic update on failure
     updateUserProfile({ walletBalance: prevBalance })
     showToast(error.message || 'Unable to top up wallet', 'error')
   }
@@ -145,7 +136,6 @@ const handleTopUp = async (e) => {
         }
       />
 
-      {/* Main wallet card */}
       <div className="relative overflow-hidden rounded-2xl border border-neon-blue/20 bg-linear-to-br from-[#0d1b2e] via-obsidian-800 to-obsidian-900 p-8 animate-slide-up fill-both">
         <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-neon-blue/8 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-neon-green/5 blur-2xl pointer-events-none" />
@@ -173,7 +163,7 @@ const handleTopUp = async (e) => {
                 <ArrowDownLeft size={13} className="text-neon-green" />
                 <span className="text-xs text-ink-500">Money In</span>
               </div>
-              <p className="font-display font-bold text-xl text-neon-green">{fmtCompact(totalIn)}</p>
+              <p className="font-display font-bold text-xl text-neon-green">{fmtCompact(totalIn, currency)}</p>
               <p className="text-xs text-ink-500 mt-0.5">{transactions.filter(t => t.type === 'credit').length} credit transactions</p>
             </div>
             <div>
@@ -181,7 +171,7 @@ const handleTopUp = async (e) => {
                 <ArrowUpRight size={13} className="text-neon-red" />
                 <span className="text-xs text-ink-500">Money Out</span>
               </div>
-              <p className="font-display font-bold text-xl text-neon-red">{fmtCompact(totalOut)}</p>
+              <p className="font-display font-bold text-xl text-neon-red">{fmtCompact(totalOut, currency)}</p>
               <p className="text-xs text-ink-500 mt-0.5">{transactions.filter(t => t.type === 'debit').length} debit transactions</p>
             </div>
           </div>
@@ -189,7 +179,6 @@ const handleTopUp = async (e) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Balance history */}
         <div className="card overflow-hidden animate-slide-up fill-both delay-100">
           <div className="px-5 py-4 border-b border-obsidian-700">
             <h2 className="font-display font-semibold text-sm text-ink-900">Balance History</h2>
@@ -209,10 +198,10 @@ const handleTopUp = async (e) => {
                 </div>
                 <div className="text-right">
                   <p className={`font-mono text-sm font-semibold ${t.type === 'credit' ? 'text-neon-green' : 'text-neon-red'}`}>
-                    {t.type === 'credit' ? '+' : '-'}{fmt(t.amount)}
+                    {t.type === 'credit' ? '+' : '-'}{fmt(t.amount, currency)}
                   </p>
                   {t.balanceAfter != null && (
-                    <p className="text-[11px] text-ink-500 font-mono">{fmt(t.balanceAfter)}</p>
+                    <p className="text-[11px] text-ink-500 font-mono">{fmt(t.balanceAfter, currency)}</p>
                   )}
                 </div>
               </div>
@@ -220,17 +209,16 @@ const handleTopUp = async (e) => {
           </div>
         </div>
 
-        {/* Account summary */}
         <div className="flex flex-col gap-4">
           <div className="card p-5 animate-slide-up fill-both delay-200">
             <h2 className="font-display font-semibold text-sm text-ink-900 mb-4">Account Summary</h2>
             <div className="space-y-3">
               {[
-                { label: 'Starting Balance', value: fmt(startingBalance),          color: 'text-ink-700' },
-                { label: 'Total Credits',    value: `+${fmt(totalIn)}`,        color: 'text-neon-green' },
-                { label: 'Total Debits',     value: `-${fmt(totalOut)}`,       color: 'text-neon-red' },
-                { label: 'Net Change',       value: fmt(totalIn - totalOut),   color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },
-                { label: 'Current Balance',  value: fmt(walletBalance),        color: 'text-neon-blue' },
+                { label: 'Starting Balance', value: fmt(startingBalance, currency),          color: 'text-ink-700' },
+                { label: 'Total Credits',    value: `+${fmt(totalIn, currency)}`,        color: 'text-neon-green' },
+                { label: 'Total Debits',     value: `-${fmt(totalOut, currency)}`,       color: 'text-neon-red' },
+                { label: 'Net Change',       value: fmt(totalIn - totalOut, currency),   color: totalIn - totalOut >= 0 ? 'text-neon-green' : 'text-neon-red' },
+                { label: 'Current Balance',  value: fmt(walletBalance, currency),        color: 'text-neon-blue' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between py-2 border-b border-obsidian-700 last:border-0">
                   <span className="text-sm text-ink-500">{row.label}</span>
@@ -247,11 +235,10 @@ const handleTopUp = async (e) => {
         <form onSubmit={handleTopUp} className="space-y-4">
           <div className="rounded-xl border border-neon-blue/20 bg-neon-blue/5 p-4 text-center">
             <p className="section-label mb-1">Current Balance</p>
-            <p className="font-display font-bold text-3xl text-neon-blue">{fmt(walletBalance)}</p>
+            <p className="font-display font-bold text-3xl text-neon-blue">{fmt(walletBalance, currency)}</p>
           </div>
           <FormGroup label="Amount to Add">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">$</span>
               <Input
                 type="number" step="0.01" min="0.01" max="1000000"
                 className="pl-7" placeholder="0.00"
@@ -286,7 +273,7 @@ const handleTopUp = async (e) => {
             <div className="rounded-xl border border-neon-green/20 bg-neon-green/5 p-3 text-center">
               <p className="text-xs text-ink-500 mb-0.5">New balance after top up</p>
               <p className="font-display font-bold text-xl text-neon-green">
-                {fmt(walletBalance + topUpValue)}
+                {fmt(walletBalance + topUpValue, currency)}
               </p>
             </div>
           )}

@@ -86,9 +86,6 @@ class BaseApi {
     const finalApiUrl = this.BaseUrl + "/" + endpoint.replace(/^\/+/, "");
     const apiAuthorization = SessionHelper.GetCustomer();
 
-    // const formData = new FormData();
-    // formData.append("file", file);
-
     const config = {
       headers: {
         ...(apiAuthorization && { Authorization: `Bearer ${apiAuthorization}` }),

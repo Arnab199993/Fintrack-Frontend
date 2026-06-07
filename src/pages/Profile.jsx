@@ -5,12 +5,12 @@ import Badge from '../components/ui/Badge.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
-import { fmt } from '../utils/helpers.js'
+import { fmt, getCurrencySymbol } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import { useDispatch } from 'react-redux'
 import { initializeAuth } from '../store/slices/userSlice.js'
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD', 'JPY']
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD', 'JPY', 'CHF', 'CNY', 'KRW', 'BRL', 'MXN', 'HKD', 'THB', 'MYR']
 const TABS = [
   { id: 'profile',   icon: Shield,  label: 'Profile'   },
   { id: 'security',  icon: Lock,    label: 'Security'  },
@@ -139,7 +139,7 @@ const handleAvatarChange = async (e) => {
         <div className="text-right hidden lg:block">
           <p className="section-label mb-1">Wallet Balance</p>
           <p className="font-display font-bold text-2xl text-neon-green">
-            {fmt(user.walletBalance)}
+            {fmt(user.walletBalance, user.currency)}
           </p>
           <p className="text-xs text-ink-500">{user.currency} account</p>
         </div>
@@ -221,7 +221,7 @@ const handleAvatarChange = async (e) => {
               >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {getCurrencySymbol(c)} {c}
                   </option>
                 ))}
               </Select>

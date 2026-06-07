@@ -4,7 +4,7 @@ import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
-import { fmt, fmtCompact, catEmoji, catColor } from '../utils/helpers.js'
+import { fmt, fmtCompact, catEmoji, catColor, getCurrencySymbol} from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 
 const monthLabel = (year, month) => {
@@ -13,7 +13,8 @@ const monthLabel = (year, month) => {
 }
 
 export default function Insights() {
-  const { showToast } = useApp()
+  const { showToast, user } = useApp()
+  const currency = user?.currency ?? 'USD'
   const [generating, setGenerating] = useState(false)
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7))
   const [insight, setInsight] = useState(null)
@@ -129,8 +130,8 @@ const catEntries = (
           </div>
           <div className="grid grid-cols-3 gap-6 mb-6">
             {[
-              { label: 'Total Income', value: fmtCompact(totalIncome), accent: 'text-neon-green', icon: TrendingUp },
-              { label: 'Total Expenses', value: fmtCompact(totalExpenses), accent: 'text-neon-red', icon: TrendingDown },
+              { label: 'Total Income', value: fmtCompact(totalIncome, currency), accent: 'text-neon-green', icon: TrendingUp },
+              { label: 'Total Expenses', value: fmtCompact(totalExpenses, currency), accent: 'text-neon-red', icon: TrendingDown },
               { label: 'Savings Rate', value: `${savingsRate}%`, accent: savingsRate >= 20 ? 'text-neon-green' : 'text-neon-yellow', icon: null },
             ].map(s => (
               <div key={s.label}>
@@ -196,7 +197,7 @@ const catEntries = (
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-ink-500">{pct}%</span>
-                      <span className="font-mono text-sm font-semibold text-ink-900">{fmt(amount)}</span>
+                      <span className="font-mono text-sm font-semibold text-ink-900">{fmt(amount, currency)}</span>
                     </div>
                   </div>
                   <div className="progress-track">
@@ -239,9 +240,9 @@ const catEntries = (
                 return (
                   <tr key={m.label} className="animate-slide-up fill-both" style={{ animationDelay: `${300 + i * 40}ms` }}>
                     <td className="font-semibold text-ink-900">{m.label}</td>
-                    <td className="font-mono text-neon-green text-sm">+{fmt(m.income ?? 0)}</td>
-                    <td className="font-mono text-neon-red text-sm">-{fmt(m.expenses ?? 0)}</td>
-                    <td className="font-mono font-semibold text-sm text-ink-900">{fmt(saved)}</td>
+                    <td className="font-mono text-neon-green text-sm">+{fmt(m.income ?? 0, currency)}</td>
+                    <td className="font-mono text-neon-red text-sm">-{fmt(m.expenses ?? 0, currency)}</td>
+                    <td className="font-mono font-semibold text-sm text-ink-900">{fmt(saved, currency)}</td>
                     <td>
                       <Badge variant={parseFloat(rate) >= 20 ? 'green' : 'yellow'}>{rate}%</Badge>
                     </td>

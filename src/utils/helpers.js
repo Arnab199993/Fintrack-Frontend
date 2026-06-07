@@ -6,13 +6,31 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export const fmt = (amount, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(toNumber(amount))
+export const CURRENCY_SYMBOLS = {
+  USD: '$',   EUR: '€',   GBP: '£',   INR: '₹',
+  CAD: 'CA$', AUD: 'A$',  SGD: 'S$',  JPY: '¥',
+  CHF: 'CHF', CNY: '¥',   KRW: '₩',   BRL: 'R$',
+  MXN: 'MX$', HKD: 'HK$', NOK: 'kr',  SEK: 'kr',
+  DKK: 'kr',  NZD: 'NZ$', ZAR: 'R',   AED: 'د.إ',
+  SAR: '﷼',   THB: '฿',   MYR: 'RM',  IDR: 'Rp',
+  PHP: '₱',   VND: '₫',   NGN: '₦',   EGP: '£',
+  TRY: '₺',   RUB: '₽',   PLN: 'zł',  CZK: 'Kč',
+}
+
+export const getCurrencySymbol = (currency = 'USD') =>
+  CURRENCY_SYMBOLS[currency?.toUpperCase()] ?? currency ?? '$'
+
+export const fmt = (amount, currency = 'USD') => {
+  const sym = getCurrencySymbol(currency)
+  const value = toNumber(amount)
+  return `${sym}${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`
+}
 
 export const fmtCompact = (amount, currency = 'USD') => {
+  const sym = getCurrencySymbol(currency)
   const value = toNumber(amount)
-  if (Math.abs(value) >= 1_000_000) return `${currency === 'USD' ? '$' : ''}${(value / 1_000_000).toFixed(2)}M`
-  if (Math.abs(value) >= 1_000)     return `${currency === 'USD' ? '$' : ''}${(value / 1_000).toFixed(1)}K`
+  if (Math.abs(value) >= 1_000_000) return `${sym}${(value / 1_000_000).toFixed(2)}M`
+  if (Math.abs(value) >= 1_000)     return `${sym}${(value / 1_000).toFixed(1)}K`
   return fmt(value, currency)
 }
 

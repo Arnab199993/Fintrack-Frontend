@@ -7,7 +7,7 @@ import { FormGroup, Input } from '../components/ui/Form.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
-import { fmtRelative } from '../utils/helpers.js'
+import { fmtRelative, getCurrencySymbol } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
@@ -28,12 +28,13 @@ const DEFAULT_SETTINGS = {
 }
 
 export default function Alerts() {
-  const { showToast } = useApp()
+  const { showToast, user } = useApp()
   const [alerts, setAlerts]           = useState([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settings, setSettings]       = useState(DEFAULT_SETTINGS)
   const [filter, setFilter]           = useState('all')
   const [loading, setLoading] = useState(true)
+  const currencySymbol = getCurrencySymbol(user?.currency)
 
   useEffect(() => {
     const loadAlerts = async () => {
@@ -42,10 +43,8 @@ export default function Alerts() {
           api.alerts.list(),
           api.alerts.getSettings(),
         ])
-        // Backend: { data: { alerts: [...], unreadCount: N, meta: {...} } }
         const alertsData = alertsResult?.data?.alerts ?? alertsResult?.data ?? []
         setAlerts(Array.isArray(alertsData) ? alertsData : [])
-        // Backend: { data: { settings: {...} } }
         const settingsData = settingsResult?.data?.settings ?? settingsResult?.data ?? DEFAULT_SETTINGS
         setSettings(settingsData)
       } catch (error) {
@@ -104,7 +103,7 @@ export default function Alerts() {
         action={
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="btn-secondary gap-2 text-sm">
+              <button onClick={markAllRead} className="btn-secondary gap-2 text-sm flex items-center cursor-pointer p-2">
                 <CheckCheck size={14} /> Mark all read
               </button>
             )}
@@ -203,10 +202,10 @@ export default function Alerts() {
       <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Alert Settings">
         <form onSubmit={handleSettingsSave} className="space-y-5">
           <FormGroup label="Large Transaction Threshold" hint="Get alerted when a single transaction exceeds this amount">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">$</span>
+            <div className="relative flex items-center">
+              <span className="absolute left-3 text-ink-500 text-sm font-medium pointer-events-none z-10">{currencySymbol}</span>
               <Input
-                type="number" min="1" step="1" className="pl-7"
+                type="number" min="1" step="1" style={{ paddingLeft: '2rem' }}
                 value={settings.largeTransactionThreshold}
                 onChange={e => setSettings(s => ({ ...s, largeTransactionThreshold: e.target.value }))}
               />
@@ -214,10 +213,10 @@ export default function Alerts() {
           </FormGroup>
 
           <FormGroup label="Low Balance Threshold" hint="Get alerted when wallet drops below this amount">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">$</span>
+            <div className="relative flex items-center">
+              <span className="absolute left-3 text-ink-500 text-sm font-medium pointer-events-none z-10">{currencySymbol}</span>
               <Input
-                type="number" min="0" step="1" className="pl-7"
+                type="number" min="0" step="1" style={{ paddingLeft: '2rem' }}
                 value={settings.lowBalanceThreshold}
                 onChange={e => setSettings(s => ({ ...s, lowBalanceThreshold: e.target.value }))}
               />

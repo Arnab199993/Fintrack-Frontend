@@ -3,12 +3,11 @@
 @import "tailwindcss";
 
 @theme {
-  /* fonts */
+
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body:    'Cabinet Grotesk', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
-  /* obsidian palette */
   --color-obsidian-950: #05060a;
   --color-obsidian-900: #0a0c12;
   --color-obsidian-800: #0f1219;
@@ -17,7 +16,7 @@
   --color-obsidian-500: #242d3d;
   --color-obsidian-400: #2e3a4e;
 
-  /* neon accents */
+
   --color-neon-green:  #00ff87;
   --color-neon-blue:   #00d4ff;
   --color-neon-purple: #bf5af2;
@@ -25,19 +24,16 @@
   --color-neon-red:    #ff453a;
   --color-neon-yellow: #ffd60a;
 
-  /* ink (text) */
   --color-ink-900: #f8fafc;
   --color-ink-700: #94a3b8;
   --color-ink-500: #475569;
   --color-ink-300: #1e293b;
 
-  /* shadows */
   --shadow-card:       0 1px 3px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4);
   --shadow-card-hover: 0 4px 24px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.5);
   --shadow-neon-green: 0 0 20px rgba(0,255,135,.25), 0 0 60px rgba(0,255,135,.08);
   --shadow-neon-blue:  0 0 20px rgba(0,212,255,.25), 0 0 60px rgba(0,212,255,.08);
 
-  /* animations */
   --animate-fade-in:       fadeIn 0.4s ease both;
   --animate-slide-up:      slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
   --animate-slide-in-right: slideInRight 0.35s cubic-bezier(0.16,1,0.3,1) both;
@@ -51,7 +47,6 @@
 @keyframes pageEnter    { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
 @keyframes spin         { to { transform:rotate(360deg) } }
 
-/* ─── Base ──────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
@@ -73,7 +68,6 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-obsidian-600); border-radius: 4px; }
 
-/* ─── Component layer ───────────────────────────────────────────────── */
 .card {
   background: var(--color-obsidian-800);
   border: 1px solid var(--color-obsidian-600);
@@ -243,11 +237,10 @@ body {
   transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* ─── Utility layer ──────────────────────────────────────────────────── */
+
 .page-enter { animation: pageEnter 0.3s cubic-bezier(0.16,1,0.3,1) both; }
 .fill-both  { animation-fill-mode: both; }
 
-/* delay helpers */
 .delay-100 { animation-delay: 100ms; }
 .delay-150 { animation-delay: 150ms; }
 .delay-200 { animation-delay: 200ms; }

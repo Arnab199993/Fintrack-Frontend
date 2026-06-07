@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Wallet, TrendingUp, TrendingDown, PiggyBank,
@@ -12,6 +12,7 @@ import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { fmt, fmtCompact, fmtDate, catEmoji, catColor, monthLabel } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
+import TrendChart from '../components/charts/TrendChart.jsx'
 
 export default function Dashboard() {
   const isMounted = useRef(false);
@@ -56,6 +57,15 @@ useEffect(() => {
  isMounted.current = true
 }, [])
 
+  const getGreeting = () => {
+    const h = new Date().getHours()
+    if (h >= 5  && h < 12) return { text: 'Good morning',   emoji: '☀️' }
+    if (h >= 12 && h < 17) return { text: 'Good afternoon', emoji: '🌤️' }
+    if (h >= 17 && h < 21) return { text: 'Good evening',   emoji: '🌆' }
+    return                         { text: 'Hey, night owl', emoji: '🌙' }
+  }
+  const greeting = getGreeting()
+
   const income   = summary?.thisMonth?.credit?.total ?? 0
   const expenses = summary?.thisMonth?.debit?.total ?? 0
   const savings  = income - expenses
@@ -66,107 +76,24 @@ useEffect(() => {
   const catSorted = categories.slice(0, 6)
   const catMax = Math.max(...catSorted.map(c => c.total || 0), 1)
 
-  const monthlyTrend = trend.reduce((acc, item) => {
-    const label = monthLabel(item.year, item.month)
-    const current = acc.find(x => x.label === label)
-    if (current) {
-      current[item.type] = item.total
-    } else {
-      acc.push({
-        label,
-        income: item.type === 'credit' ? item.total : 0,
-        expenses: item.type === 'debit' ? item.total : 0,
-      })
-    }
-    return acc
-  }, [])
+  const monthlyTrend = useMemo(() => {
+    const map = {}
+    trend.forEach(item => {
+      const key = `${item.year}-${String(item.month).padStart(2, '0')}`
+      if (!map[key]) map[key] = { key, label: monthLabel(item.year, item.month), income: 0, expenses: 0 }
+      if (item.type === 'credit') map[key].income   = item.total
+      if (item.type === 'debit')  map[key].expenses = item.total
+    })
+    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key))
+  }, [trend])
 
-  console.log("categoriesss",categories)
 
-  const options = {
-    chart: {
-      type: "bar",
-      toolbar: { show: false },
-      fontFamily: "inherit",
-      stacked:true
-    },
-
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "4%",
-        borderRadius: 0,
-        stacked:true
-      },
-    },
-
-    dataLabels: {
-      enabled: false,
-    },
-
-    stroke: {
-      show: true,
-      width: 1,
-      colors: ["transparent"],
-    },
-
-    xaxis: {
-      categories:monthlyTrend.map((item)=>item.label),
-      labels: {
-        style: {
-          colors: "#9CA3AF",
-          fontSize: "10px",
-        },
-      },
-    },
-
-    yaxis: {
-      labels: {
-        style: {
-          colors: "#9CA3AF",
-          fontSize: "10px",
-        },
-      },
-    },
-
-    colors: ["#22c55e", "#ef4444"], 
-
-    legend: {
-      position: "bottom",
-      labels: {
-        colors: "#9CA3AF",
-      },
-    },
-
-    grid: {
-      borderColor: "#1f2937",
-    },
-
-    tooltip: {
-      theme: "dark",
-      y: {
-        formatter: (val) => `${val}`,
-      },
-    },
-  };
-  const series = [
-    {
-      name: "Income",
-      data: monthlyTrend.map((m) => m.credit ?? 0),
-    },
-    {
-      name: "Expenses",
-      data: monthlyTrend.map((m) => m.expenses ?? 0),
-    },
-  ];
-
-  console.log("monthlyTrendddd",monthlyTrend)
 
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={user ? `Good morning, ${user.firstName} 👋` : "Good morning 👋"}
+        title={user ? `${greeting.text}, ${user.firstName} ${greeting.emoji}` : `${greeting.text} ${greeting.emoji}`}
         subtitle="Here's your financial snapshot"
       />
 
@@ -179,7 +106,7 @@ useEffect(() => {
               Total Wallet Balance
             </p>
             <p className="font-display font-bold text-5xl tracking-tight text-white">
-              {fmtCompact(user?.walletBalance ?? 0)}
+              {fmtCompact(user?.walletBalance ?? 0, user?.currency)}
               <span className="text-xl font-normal text-ink-500 ml-2">
                 {user?.currency ?? "USD"}
               </span>
@@ -205,7 +132,7 @@ useEffect(() => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Monthly Income"
-          value={fmtCompact(income)}
+          value={fmtCompact(income, user?.currency)}
           sub={`${summary?.thisMonth?.credit?.count ?? 0} credits`}
           icon={TrendingUp}
           accent="green"
@@ -213,7 +140,7 @@ useEffect(() => {
         />
         <StatCard
           label="Monthly Expenses"
-          value={fmtCompact(expenses)}
+          value={fmtCompact(expenses, user?.currency)}
           sub={`${summary?.thisMonth?.debit?.count ?? 0} debits`}
           icon={TrendingDown}
           accent="red"
@@ -221,7 +148,7 @@ useEffect(() => {
         />
         <StatCard
           label="Net Savings"
-          value={fmtCompact(savings)}
+          value={fmtCompact(savings, user?.currency)}
           sub={`${savePct}% savings rate`}
           icon={PiggyBank}
           accent="blue"
@@ -230,7 +157,7 @@ useEffect(() => {
         <StatCard
           label="Top Category"
           value={catSorted[0]?.category ?? "—"}
-          sub={catSorted[0] ? fmt(catSorted[0].total) : ""}
+          sub={catSorted[0] ? fmt(catSorted[0].total, user?.currency) : ""}
           icon={ShoppingBag}
           accent="purple"
           delay={240}
@@ -285,7 +212,7 @@ useEffect(() => {
                   className={`font-mono font-semibold text-sm tabular-nums shrink-0 ${t.type === "credit" ? "text-neon-green" : "text-neon-red"}`}
                 >
                   {t.type === "credit" ? "+" : "-"}
-                  {fmt(t.amount)}
+                  {fmt(t.amount, user?.currency)}
                 </p>
               </div>
             ))}
@@ -305,7 +232,7 @@ useEffect(() => {
                       {catEmoji(category.category)} {category.category}
                     </span>
                     <span className="text-xs font-mono font-semibold text-ink-700">
-                      {fmtCompact(category.total)}
+                      {fmtCompact(category.total, user?.currency)}
                     </span>
                   </div>
                   <div className="progress-track">
@@ -344,59 +271,7 @@ useEffect(() => {
           </div>
         </div>
       </div>
-
-      <div className="card p-6 animate-slide-up fill-both delay-300">
-        <h2 className="font-display font-semibold text-base text-ink-900 mb-6">
-          6-Month Trend
-        </h2>
-        <ReactApexChart
-          series={series}
-          type="bar"
-          options={options}
-          height={350}
-        />
-        {/* <div className="flex items-end gap-3 h-32">
-          {monthlyTrend.map((m, i) => {
-            const maxVal = Math.max(
-              ...monthlyTrend.flatMap(x => [x.income ?? 0, x.expenses ?? 0]),
-              1,
-            )
-            const incH = ((m.income ?? 0) / maxVal) * 100
-            const expH = ((m.expenses ?? 0) / maxVal) * 100
-            return (
-              <div
-                key={m.label}
-                className="flex-1 flex flex-col items-center gap-1 group animate-slide-up fill-both"
-                style={{ animationDelay: `${300 + i * 60}ms` }}
-              >
-                <div className="w-full flex items-end justify-center gap-1 h-28">
-                  <div
-                    className="w-3 rounded-t-sm bg-neon-green/40 group-hover:bg-neon-green transition-colors"
-                    style={{ height: `${incH}%` }}
-                    title={`Income: ${fmt(m.income ?? 0)}`}
-                  />
-                  <div
-                    className="w-3 rounded-t-sm bg-neon-red/40 group-hover:bg-neon-red transition-colors"
-                    style={{ height: `${expH}%` }}
-                    title={`Expenses: ${fmt(m.expenses ?? 0)}`}
-                  />
-                </div>
-                <span className="text-[10px] text-ink-500 group-hover:text-ink-700 transition-colors">
-                  {m.label}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-        <div className="flex items-center gap-6 mt-4">
-          <div className="flex items-center gap-2 text-xs text-ink-500">
-            <div className="w-3 h-3 rounded-sm bg-neon-green/40" /> Income
-          </div>
-          <div className="flex items-center gap-2 text-xs text-ink-500">
-            <div className="w-3 h-3 rounded-sm bg-neon-red/40" /> Expenses
-          </div>
-        </div> */}
-      </div>
+      <TrendChart monthlyTrend={monthlyTrend}/>
     </div>
   );
 }

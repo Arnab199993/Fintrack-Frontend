@@ -28,7 +28,6 @@ export function useApp() {
     try {
       await api.auth.logout()
     } catch (_error) {
-      // ignore logout errors
     }
     SessionHelper.ClearSession()
     dispatch(clearAuth())
@@ -44,7 +43,6 @@ export function useApp() {
     dispatch(setUserProfile(profileData))
   }
 
-  // Fixed: renamed local fn to avoid collision with the imported updateUserProfileAction
   const updateUserProfile = (profileData) => {
     dispatch(updateUserProfileAction(profileData))
   }

@@ -8,7 +8,7 @@ import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { CATEGORIES } from '../utils/constants.js'
-import { fmt, catEmoji, catColor } from '../utils/helpers.js'
+import { fmt, catEmoji, catColor, getCurrencySymbol} from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
@@ -21,7 +21,8 @@ const STATUS_CONFIG = {
 const EMPTY_FORM = { category: 'food', limitAmount: '', period: 'monthly', alertThreshold: '80' }
 
 export default function Budgets() {
-  const { showToast } = useApp()
+  const { showToast, user } = useApp()
+  const currency = user?.currency ?? 'USD'
   const [budgets, setBudgets] = useState([])
   const [filterPeriod, setFilterPeriod] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -112,8 +113,8 @@ export default function Budgets() {
       {/* Summary row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up fill-both">
         {[
-          { label: 'Total Budget',   value: fmt(totalLimit), accent: 'bg-neon-blue' },
-          { label: 'Total Spent',    value: fmt(totalSpent), accent: 'bg-neon-red' },
+          { label: 'Total Budget',   value: fmt(totalLimit, currency), accent: 'bg-neon-blue' },
+          { label: 'Total Spent',    value: fmt(totalSpent, currency), accent: 'bg-neon-red' },
           { label: 'Budgets on Track', value: healthy,       accent: 'bg-neon-green' },
           { label: 'Budgets Exceeded', value: exceeded,      accent: 'bg-neon-red' },
         ].map((s, i) => (
@@ -173,12 +174,12 @@ export default function Budgets() {
                   <div>
                     <p className="section-label mb-0.5">Spent</p>
                     <p className={`font-display font-bold text-lg ${b.status === 'exceeded' ? 'text-neon-red' : b.status === 'warning' ? 'text-neon-yellow' : 'text-ink-900'}`}>
-                      {fmt(b.spentAmount)}
+                      {fmt(b.spentAmount, currency)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="section-label mb-0.5">Limit</p>
-                    <p className="font-display font-semibold text-ink-700">{fmt(b.limitAmount)}</p>
+                    <p className="font-display font-semibold text-ink-700">{fmt(b.limitAmount, currency)}</p>
                   </div>
                 </div>
 
@@ -200,7 +201,7 @@ export default function Budgets() {
                     {cfg.label} · {b.percentUsed.toFixed(1)}%
                   </div>
                   <p className="text-xs text-ink-500">
-                    {b.remaining > 0 ? `${fmt(b.remaining)} left` : 'Over limit'}
+                    {b.remaining > 0 ? `${fmt(b.remaining, currency)} left` : 'Over limit'}
                   </p>
                 </div>
 

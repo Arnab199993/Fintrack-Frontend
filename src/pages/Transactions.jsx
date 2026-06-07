@@ -8,14 +8,15 @@ import { FormGroup, Input, Select, Textarea } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
 import { api } from '../utils/api.js'
 import { CATEGORIES } from '../utils/constants.js'
-import { fmt, fmtDate, catEmoji, todayISO } from '../utils/helpers.js'
+import { fmt, fmtDate, catEmoji, todayISO, getCurrencySymbol} from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 
 const EMPTY_FORM = { type: 'debit', amount: '', category: 'food', description: '', date: todayISO(), tags: '' }
 
 export default function Transactions() {
-  const { showToast } = useApp()
+  const { showToast, user } = useApp()
+  const currency = user?.currency ?? 'USD'
   const [txns, setTxns] = useState([])
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
@@ -94,65 +95,6 @@ export default function Transactions() {
       showToast(error.message || 'Unable to delete transaction', 'error')
     }
   }
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault()
-  //   if (!form.amount || isNaN(form.amount)) return showToast('Enter a valid amount', 'error')
-
-  //   setSaving(true)
-  //   try {
-  //     if (editTarget) {
-  //       const result = await api.transactions.update(editTarget._id, {
-  //         category: form.category,
-  //         description: form.description,
-  //         date: form.date,
-  //         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-  //       })
-  //       const updated = result.data?.transaction ?? result.transaction
-  //       if (updated) {
-  //         setTxns(prev => prev.map(t => t._id === editTarget._id ? updated : t))
-  //       }
-  //       showToast('Transaction updated', 'success')
-  //     } else {
-  //       const body = {
-  //         type: form.type,
-  //         amount: parseFloat(form.amount),
-  //         category: form.category,
-  //         description: form.description,
-  //         date: form.date,
-  //         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-  //       }
-
-  //       let result
-  //       if (receiptFile) {
-  //         const formData = new FormData()
-  //         Object.entries(body).forEach(([key, value]) => {
-  //           if (Array.isArray(value)) value.forEach(v => formData.append(key, v))
-  //           else formData.append(key, String(value))
-  //         })
-  //         formData.append('receipt', receiptFile)
-  //         result = await api.transactions.createWithReceipt(formData)
-  //       } else {
-  //         result = await api.transactions.create(body)
-  //       }
-
-  //       const created = result.data?.transaction ?? result.transaction
-  //       if (created) {
-  //         setTxns(prev => [created, ...prev])
-  //         setTotalCount(prev => prev + 1)
-  //       }
-  //       showToast('Transaction added', 'success')
-  //     }
-  //     setModalOpen(false)
-  //     setReceiptFile(null)
-  //     setPage(1)
-  //     await fetchTransactions(1)
-  //   } catch (error) {
-  //     showToast(error.message || 'Unable to save transaction', 'error')
-  //   } finally {
-  //     setSaving(false)
-  //   }
-  // }
 
   const handleSubmit = async (e) => {
   e.preventDefault()
@@ -335,14 +277,14 @@ export default function Transactions() {
                       </Badge>
                     </td>
                     <td className="text-ink-500 text-sm">{fmtDate(t.date)}</td>
-                    <td className="font-mono text-xs text-ink-500">{t.balanceAfter != null ? fmt(t.balanceAfter) : '—'}</td>
+                    <td className="font-mono text-xs text-ink-500">{t.balanceAfter != null ? fmt(t.balanceAfter, currency) : '—'}</td>
                     <td className="text-right">
                       <div className="flex items-center gap-1">
                         {t.type === 'credit'
                           ? <ArrowUpRight size={13} className="text-neon-green" />
                           : <ArrowDownRight size={13} className="text-neon-red" />}
                         <span className={`font-mono font-semibold text-sm tabular-nums ${t.type === 'credit' ? 'text-neon-green' : 'text-neon-red'}`}>
-                          {fmt(t.amount)}
+                          {fmt(t.amount, currency)}
                         </span>
                       </div>
                     </td>
