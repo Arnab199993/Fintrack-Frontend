@@ -1,7 +1,7 @@
 import SessionHelper from "./SessionHelper.js";
 
 class BaseApi {
-  static BaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+  static BaseUrl = import.meta.env.VITE_API_BASE_URL || "https://fintrack-backend-s0vj.onrender.com/api/v1";
 
   static async BaseGetRequestAsync(endpoint) {
     return this.BaseGetRequestInternalAsync(endpoint);
