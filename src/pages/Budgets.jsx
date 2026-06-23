@@ -117,7 +117,7 @@ export default function Budgets() {
           { label: 'Budgets Exceeded', value: exceeded,      accent: 'bg-neon-red' },
         ].map((s, i) => (
           <div key={s.label} className="card p-4 relative overflow-hidden animate-slide-up fill-both" style={{ animationDelay: `${i*60}ms` }}>
-            <div className={`absolute top-0 left-0 right-0 h-[2px] ${s.accent}`} />
+            <div className={`absolute top-0 left-0 right-0 h-0.5 ${s.accent}`} />
             <p className="section-label mb-2">{s.label}</p>
             <p className="font-display font-bold text-xl text-ink-900">{s.value}</p>
           </div>
