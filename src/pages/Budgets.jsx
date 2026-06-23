@@ -96,7 +96,6 @@ export default function Budgets() {
     }
   }
 
-  // Totals
   const totalLimit  = budgets.reduce((s, b) => s + b.limitAmount, 0)
   const totalSpent  = budgets.reduce((s, b) => s + b.spentAmount, 0)
   const exceeded    = budgets.filter(b => b.status === 'exceeded').length
@@ -110,7 +109,6 @@ export default function Budgets() {
         action={<PrimaryBtn handleClick={openAdd}><Plus size={15} /> New Budget</PrimaryBtn>}
       />
 
-      {/* Summary row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up fill-both">
         {[
           { label: 'Total Budget',   value: fmt(totalLimit, currency), accent: 'bg-neon-blue' },
@@ -126,7 +124,6 @@ export default function Budgets() {
         ))}
       </div>
 
-      {/* Filter */}
       <div className="flex items-center gap-3">
         {['', 'weekly', 'monthly', 'yearly'].map(p => (
           <button
@@ -139,7 +136,6 @@ export default function Budgets() {
         ))}
       </div>
 
-      {/* Budget cards grid */}
       {visible.length === 0 ? (
         <div className="card"><EmptyState icon="◎" title="No budgets found" sub="Create a budget to start tracking your spending limits" action={<PrimaryBtn handleClick={openAdd}><Plus size={14}/> Create Budget</PrimaryBtn>} /></div>
       ) : (
@@ -152,7 +148,7 @@ export default function Budgets() {
 
             return (
               <div key={b._id} className="card p-5 hover:border-obsidian-500 transition-all duration-200 hover:-translate-y-0.5 animate-slide-up fill-both" style={{ animationDelay: `${i * 60}ms` }}>
-                {/* Header */}
+
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: `${color}20` }}>
@@ -169,7 +165,6 @@ export default function Budgets() {
                   </div>
                 </div>
 
-                {/* Amounts */}
                 <div className="flex justify-between items-end mb-2">
                   <div>
                     <p className="section-label mb-0.5">Spent</p>
@@ -183,7 +178,6 @@ export default function Budgets() {
                   </div>
                 </div>
 
-                {/* Progress */}
                 <div className="progress-track">
                   <div
                     className="progress-fill"
@@ -194,7 +188,6 @@ export default function Budgets() {
                   />
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between mt-3">
                   <div className={`flex items-center gap-1.5 text-xs font-semibold ${cfg.variant === 'green' ? 'text-neon-green' : cfg.variant === 'yellow' ? 'text-neon-yellow' : 'text-neon-red'}`}>
                     <Icon size={12} />
@@ -212,7 +205,6 @@ export default function Budgets() {
         </div>
       )}
 
-      {/* Modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editTarget ? 'Edit Budget' : 'New Budget'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!editTarget && (

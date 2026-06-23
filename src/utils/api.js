@@ -10,6 +10,9 @@ export const authApi = {
   refreshToken: () => BaseApi.BasePostRequestAsync("auth/token/refresh", {}),
   resendOtp: (data) => BaseApi.BasePostRequestAsync("auth/otp/resend", data),
   logout: () => BaseApi.BasePostRequestAsync("auth/logout", {}),
+  forgotPassword: (data) => BaseApi.BasePostRequestAsync("auth/forgot-password", data),
+  resetPassword: (data) => BaseApi.BasePostRequestAsync("auth/reset-password", data),
+  deleteAccount: () => BaseApi.BaseDeleteRequestAsync("auth/account"),
 };
 
 // User API

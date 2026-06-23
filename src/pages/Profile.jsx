@@ -4,11 +4,12 @@ import PageHeader from '../components/ui/PageHeader.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { FormGroup, Input, Select } from '../components/ui/Form.jsx'
 import { useApp } from '../hooks/useApp.js'
-import { api } from '../utils/api.js'
+import { api, authApi } from '../utils/api.js'
 import { fmt, getCurrencySymbol } from '../utils/helpers.js'
 import PrimaryBtn from '../constant/PrimaryBtn.jsx'
 import { useDispatch } from 'react-redux'
 import { initializeAuth } from '../store/slices/userSlice.js'
+import { useNavigate } from 'react-router-dom'
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'SGD', 'JPY', 'CHF', 'CNY', 'KRW', 'BRL', 'MXN', 'HKD', 'THB', 'MYR']
 const TABS = [
@@ -25,6 +26,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const initials = user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}` : ''
   const dispatch = useDispatch()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return
@@ -87,7 +89,27 @@ const handleAvatarChange = async (e) => {
     }
   }
 
-  console.log("userrrr",user)
+  const handleDeleteAccount = async () => {
+    if (!confirm('Delete your fintrack account?')) return
+    setSaving(true);
+    const userId = user.id;
+    try {
+      if (userId) {
+        const result = await authApi.deleteAccount(userId);
+        if (result.statusCode === 200) {
+          localStorage.clear();
+          navigate("/");
+          showToast(result.message);
+        } else {
+          showToast(result.message);
+        }
+      }
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!user) {
     return <div className="flex items-center justify-center min-h-screen">Loading profile...</div>
@@ -97,7 +119,6 @@ const handleAvatarChange = async (e) => {
     <div className="space-y-6">
       <PageHeader title="Profile" subtitle="Manage your account settings" />
 
-      {/* Avatar + name hero */}
       <div className="card p-6 flex items-center gap-6 animate-slide-up fill-both">
         <div className="relative group">
           <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-neon-purple to-neon-blue flex items-center justify-center text-2xl font-display font-bold text-white overflow-hidden">
@@ -145,7 +166,6 @@ const handleAvatarChange = async (e) => {
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-1 bg-obsidian-800 border border-obsidian-700 p-1 rounded-xl w-fit">
         {TABS.map(({ id, icon: Icon, label }) => (
           <button
@@ -162,7 +182,6 @@ const handleAvatarChange = async (e) => {
         ))}
       </div>
 
-      {/* Profile tab */}
       {tab === "profile" && (
         <div className="card p-6 animate-slide-up fill-both">
           <h3 className="font-display font-semibold text-base text-ink-900 mb-5">
@@ -226,17 +245,20 @@ const handleAvatarChange = async (e) => {
                 ))}
               </Select>
             </FormGroup>
-            <div className="pt-2">
+          </form>
+           <div className="pt-2 flex justify-between mt-2">
               <PrimaryBtn type="submit" disabled={saving}>
                 <Save size={14} className={saving ? "animate-pulse" : ""} />
                 {saving ? "Saving…" : "Save Changes"}
               </PrimaryBtn>
+
+              <button onClick={handleDeleteAccount} className='px-8 bg-red-600 cursor-pointer justify-between items-center rounded-sm'>
+                Delete Account
+              </button>
             </div>
-          </form>
         </div>
       )}
 
-      {/* Security tab */}
       {tab === "security" && (
         <div className="space-y-4 animate-slide-up fill-both">
           <div className="card p-6">

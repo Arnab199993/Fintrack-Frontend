@@ -114,7 +114,6 @@ export default function Alerts() {
         }
       />
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 animate-slide-up fill-both">
         {[
           { label: 'Total',  value: alerts.length, color: 'text-ink-900' },
@@ -128,7 +127,6 @@ export default function Alerts() {
         ))}
       </div>
 
-      {/* Filter tabs */}
       <div className="flex items-center gap-2">
         {[
           { id: 'all', label: 'All' },
@@ -149,7 +147,6 @@ export default function Alerts() {
         ))}
       </div>
 
-      {/* Alert list */}
       <div className="card overflow-hidden animate-slide-up fill-both delay-100">
         {visible.length === 0 ? (
           <EmptyState icon="🔔" title="No alerts here" sub="You're all caught up!" />
@@ -164,12 +161,10 @@ export default function Alerts() {
                   className={`flex items-start gap-4 px-5 py-4 transition-colors animate-slide-up fill-both ${a.isRead ? 'opacity-60' : 'hover:bg-obsidian-700/40'}`}
                   style={{ animationDelay: `${100 + i * 50}ms` }}
                 >
-                  {/* icon */}
                   <div className={`w-10 h-10 rounded-xl ${cfg.bg} flex items-center justify-center shrink-0 mt-0.5`}>
                     <Icon size={16} className={cfg.color} />
                   </div>
 
-                  {/* content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 mb-1">
                       <p className={`text-sm font-semibold ${a.isRead ? 'text-ink-700' : 'text-ink-900'}`}>{a.title}</p>
@@ -179,7 +174,6 @@ export default function Alerts() {
                     <p className="text-[11px] text-ink-500/70 mt-1.5">{fmtRelative(a.createdAt)}</p>
                   </div>
 
-                  {/* right */}
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <Badge variant={cfg.badge}>{cfg.label}</Badge>
                     {!a.isRead && (
@@ -198,7 +192,6 @@ export default function Alerts() {
         )}
       </div>
 
-      {/* Settings modal */}
       <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Alert Settings">
         <form onSubmit={handleSettingsSave} className="space-y-5">
           <FormGroup label="Large Transaction Threshold" hint="Get alerted when a single transaction exceeds this amount">

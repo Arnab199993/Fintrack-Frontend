@@ -230,7 +230,6 @@ const handleTopUp = async (e) => {
         </div>
       </div>
 
-      {/* Top Up Modal */}
       <Modal open={topUpOpen} onClose={() => setTopUpOpen(false)} title="Top Up Wallet">
         <form onSubmit={handleTopUp} className="space-y-4">
           <div className="rounded-xl border border-neon-blue/20 bg-neon-blue/5 p-4 text-center">

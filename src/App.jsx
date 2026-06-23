@@ -48,6 +48,7 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         <Route path='/' element={<Auth />} />
+        <Route path="/reset-password" element={<Auth />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Sidebar />}>
             <Route path='/dashboard' element={<Dashboard />} />
