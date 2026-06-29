@@ -5,10 +5,10 @@ import { useApp } from '../../hooks/useApp.js'
 import { api } from '../../utils/api.js'
 
 const FEATURES = [
-  { icon: BarChart3, text: 'Category-wise spending charts'     },
-  { icon: Zap,       text: 'financial insights'     },
-  { icon: Shield,    text: '2-step email OTP verification'     },
-  { icon: TrendingUp,text: 'Smart budget alerts & tracking'    },
+  { icon: BarChart3, text: 'Category-wise spending charts'},
+  { icon: Zap,       text: 'financial insights'},
+  { icon: Shield,    text: '2-step email OTP verification'},
+  { icon: TrendingUp,text: 'Smart budget alerts & tracking'},
 ]
 
 import OtpInput from './OtpInput.jsx'

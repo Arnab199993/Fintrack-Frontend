@@ -30,7 +30,7 @@ return (
       {/* Logo */}
       <div className="px-5 py-6 border-b border-obsidian-700">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neon-green to-neon-blue flex items-center justify-center shadow-neon-green">
+          <div className="w-8 h-8 rounded-xl bg-linear-to-br from-neon-green to-neon-blue flex items-center justify-center shadow-neon-green">
             <TrendingUp size={15} className="text-obsidian-950 stroke-[2.5]" />
           </div>
           <span className="font-display font-bold text-base text-ink-900 tracking-tight">

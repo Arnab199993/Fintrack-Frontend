@@ -19,7 +19,7 @@ const TABS = [
 
 export default function Profile() {
   const fileInputRef = useRef(null)
-  const { user, setUser, showToast } = useApp()
+  const { user, setUser, showToast, confirmAction } = useApp()
   const [tab, setTab] = useState('profile')
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', currency: 'USD' })
   const [passForm, setPassForm] = useState({ current: '', newPass: '', confirm: '' })
@@ -90,7 +90,12 @@ const handleAvatarChange = async (e) => {
   }
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Delete your fintrack account?')) return
+    const confirmed = await confirmAction({
+      title: "Delete your fintrack account?",
+      text: "Your fintrack account will be permanently deleted.",
+      confirmButtonText: "Delete",
+    });
+    if (!confirmed) return
     setSaving(true);
     const userId = user.id;
     try {

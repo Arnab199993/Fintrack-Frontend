@@ -15,7 +15,7 @@ import SecondaryBtn from '../constant/SrcondaryBtn.jsx'
 const EMPTY_FORM = { type: 'debit', amount: '', category: 'food', description: '', date: todayISO(), tags: '' }
 
 export default function Transactions() {
-  const { showToast, user } = useApp()
+  const { showToast, user, confirmAction } = useApp()
   const currency = user?.currency ?? 'USD'
   const [txns, setTxns] = useState([])
   const [search, setSearch] = useState('')
@@ -86,7 +86,12 @@ export default function Transactions() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this transaction?')) return
+        const confirmed = await confirmAction({
+          title: "Delete this transaction?",
+          text: "This transaction will be permanently deleted.",
+          confirmButtonText: "Delete",
+        });
+    if (!confirmed) return
     try {
       await api.transactions.remove(id)
       await fetchTransactions(page)
@@ -223,12 +228,12 @@ export default function Transactions() {
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
         </div>
-        <select className="field w-auto" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1) }}>
+        <select className="field w-auto cursor-pointer" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1) }}>
           <option value="">All Types</option>
           <option value="credit">Credit</option>
           <option value="debit">Debit</option>
         </select>
-        <select className="field w-auto" value={filterCat} onChange={e => { setFilterCat(e.target.value); setPage(1) }}>
+        <select className="field w-auto cursor-pointer" value={filterCat} onChange={e => { setFilterCat(e.target.value); setPage(1) }}>
           <option value="">All Categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{catEmoji(c)} {c}</option>)}
         </select>

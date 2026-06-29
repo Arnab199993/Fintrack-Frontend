@@ -21,7 +21,7 @@ const STATUS_CONFIG = {
 const EMPTY_FORM = { category: 'food', limitAmount: '', period: 'monthly', alertThreshold: '80' }
 
 export default function Budgets() {
-  const { showToast, user } = useApp()
+  const { user, confirmAction, showToast } = useApp()
   const currency = user?.currency ?? 'USD'
   const [budgets, setBudgets] = useState([])
   const [filterPeriod, setFilterPeriod] = useState('')
@@ -54,7 +54,13 @@ export default function Budgets() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this budget?')) return
+     const confirmed = await confirmAction({
+       title: "Delete this Budget?",
+       text: "This budget will be permanently deleted.",
+       confirmButtonText: "Delete",
+     });
+
+  if (!confirmed) return;
     try {
       await api.budgets.remove(id)
       setBudgets(prev => prev.filter(b => b._id !== id))

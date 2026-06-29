@@ -51,7 +51,7 @@ export default function Dashboard() {
   }
 
 useEffect(() => {
-  if (isMounted.current) true;
+  if (isMounted.current) return;
   setLoading(false)
   loadDashboard()
  isMounted.current = true
@@ -62,7 +62,7 @@ useEffect(() => {
     if (h >= 5  && h < 12) return { text: 'Good morning',   emoji: '☀️' }
     if (h >= 12 && h < 17) return { text: 'Good afternoon', emoji: '🌤️' }
     if (h >= 17 && h < 21) return { text: 'Good evening',   emoji: '🌆' }
-    return                         { text: 'Hey, night owl', emoji: '🌙' }
+    return { text: 'Hey, night owl', emoji: '🌙' }
   }
   const greeting = getGreeting()
 
@@ -121,7 +121,7 @@ useEffect(() => {
             </div>
             <button
               onClick={() => navigate("/transactions")}
-              className="btn-secondary px-5 py-2.5 text-sm"
+              className="btn-secondary px-5 py-2.5 text-sm rounded-sm cursor-pointer"
             >
               View All
             </button>

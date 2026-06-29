@@ -4,6 +4,7 @@ import { setUserProfile, updateUserProfile as updateUserProfileAction, clearUser
 import { clearAuth, setToken } from '../store/slices/authSlice.js'
 import { api } from '../utils/api.js'
 import SessionHelper from '../utils/SessionHelper.js'
+import Swal from 'sweetalert2'
 
 export function useApp() {
   const dispatch = useDispatch()
@@ -23,6 +24,29 @@ export function useApp() {
       dispatch(clearToast())
     }, 3500)
   }
+
+  const confirmAction = async ({
+  title = 'Are you sure?',
+  text = 'This action cannot be undone.',
+  icon = 'warning',
+  confirmButtonText = 'Yes',
+  cancelButtonText = 'Cancel',
+  confirmButtonColor = '#d33',
+  cancelButtonColor = '#3085d6',
+}) => {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon,
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    confirmButtonColor,
+    cancelButtonColor,
+  })
+
+  return result.isConfirmed
+}
 
   const logout = async () => {
     try {
@@ -64,6 +88,7 @@ export function useApp() {
     authReady,
     setAuthReady: setAuthReadyState,
     toast,
+    confirmAction
   }
 }
 
