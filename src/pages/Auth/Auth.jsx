@@ -241,10 +241,11 @@ const handleResetPasswordFromUrl = () => {
         <div className="w-full max-w-sm animate-slide-up fill-both">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="w-8 h-8 rounded-xl bg-linear-to-br from-neon-green to-neon-blue flex items-center justify-center">
-              <TrendingUp
+              {/* <TrendingUp
                 size={15}
                 className="text-obsidian-950 stroke-[2.5]"
-              />
+              /> */}
+              <img src={fintrack} sizes='18' lassName="text-obsidian-950 stroke-[2.5]" />
             </div>
             <span className="font-display font-bold text-xl text-ink-900">
               FinTrack
