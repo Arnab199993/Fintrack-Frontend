@@ -3,6 +3,7 @@ import { TrendingUp, ArrowRight, Eye, EyeOff, Shield, BarChart3, Zap, KeyRound }
 import { FormGroup, Input } from '../../components/ui/Form.jsx'
 import { useApp } from '../../hooks/useApp.js'
 import { api } from '../../utils/api.js'
+import fintrack from "../../assets/fintrack.png"
 
 const FEATURES = [
   { icon: BarChart3, text: 'Category-wise spending charts'},
@@ -198,10 +199,11 @@ const handleResetPasswordFromUrl = () => {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-neon-green to-neon-blue flex items-center justify-center shadow-neon-green">
-              <TrendingUp
+              {/* <TrendingUp
                 size={18}
                 className="text-obsidian-950 stroke-[2.5]"
-              />
+              /> */}
+              <img src={fintrack} sizes='18' lassName="text-obsidian-950 stroke-[2.5]" />
             </div>
             <span className="font-display font-bold text-2xl text-ink-900 tracking-tight">
               FinTrack
